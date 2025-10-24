@@ -1289,7 +1289,7 @@ pre code {
     vertical-align: middle;
   }
   .links-of-author a::before {
-    background: #11e5ff;
+    background: #390f0f;
     display: inline-block;
     margin-right: 3px;
     transform: translateY(-2px);
@@ -2625,7 +2625,7 @@ mark.search-keyword {
 }
 header.header {
   background: var(--content-bg-color);
-  border-radius: 0.6rem;
+  border-radius: 0.5rem;
   box-shadow: 0 2px 2px 0 rgba(0,0,0,0.12), 0 3px 1px -2px rgba(0,0,0,0.06), 0 1px 5px 0 rgba(0,0,0,0.12);
 }
 @media (max-width: 991px) {
@@ -2662,7 +2662,7 @@ header.header {
   }
 }
 .main-inner {
-  border-radius: 0.6rem;
+  border-radius: 0.5rem;
   box-sizing: border-box;
   width: calc(100% - 252px);
 }
@@ -2790,7 +2790,7 @@ header.header {
 .sidebar {
   background: var(--body-bg-color);
   box-shadow: none;
-  margin-top: 100%;
+  margin-top: 16px;
   position: static;
   width: $sidebar-desktop;
 }
@@ -2804,7 +2804,7 @@ header.header {
 }
 .sidebar-inner {
   background: var(--content-bg-color);
-  border-radius: 0.6rem;
+  border-radius: 0.5rem;
   box-shadow: 0 2px 2px 0 rgba(0,0,0,0.12), 0 3px 1px -2px rgba(0,0,0,0.06), 0 1px 5px 0 rgba(0,0,0,0.12), 0 -1px 0.5px 0 rgba(0,0,0,0.09);
   box-sizing: border-box;
   color: #000;
@@ -2899,11 +2899,11 @@ header.header {
 .main-inner .comment-position .comments,
 .main-inner .pagination {
   background: var(--content-bg-color);
-  border-radius: 0.6rem;
+  border-radius: 0.5rem;
   box-shadow: 0 2px 2px 0 rgba(0,0,0,0.12), 0 3px 1px -2px rgba(0,0,0,0.06), 0 1px 5px 0 rgba(0,0,0,0.12);
 }
 .main-inner .post-block:not(:first-child):not(:first-child) {
-  border-radius: 0.6rem;
+  border-radius: 0.5rem;
   box-shadow: 0 2px 2px 0 rgba(0,0,0,0.12), 0 3px 1px -2px rgba(0,0,0,0.06), 0 1px 5px 0 rgba(0,0,0,0.12), 0 -1px 0.5px 0 rgba(0,0,0,0.09);
   margin-top: 12px;
 }
@@ -2921,7 +2921,7 @@ header.header {
 .main-inner > .comments,
 .main-inner .comment-position .comments,
 .main-inner .pagination {
-  border-radius: 0.6rem;
+  border-radius: 0.5rem;
   box-shadow: 0 2px 2px 0 rgba(0,0,0,0.12), 0 3px 1px -2px rgba(0,0,0,0.06), 0 1px 5px 0 rgba(0,0,0,0.12), 0 -1px 0.5px 0 rgba(0,0,0,0.09);
   margin-top: 12px;
 }
@@ -2949,7 +2949,7 @@ header.header {
   display: none;
 }
 .pagination {
-  border-radius: 0.6rem;
+  border-radius: 0.5rem;
   border-top: initial;
   box-shadow: 0 2px 2px 0 rgba(0,0,0,0.12), 0 3px 1px -2px rgba(0,0,0,0.06), 0 1px 5px 0 rgba(0,0,0,0.12), 0 -1px 0.5px 0 rgba(0,0,0,0.09);
   margin: 12px 0 0;
