@@ -214,7 +214,7 @@
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-count">7</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -257,7 +257,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://ding-kaiyue.github.io/2025/10/24/hello-world/">
+    <link itemprop="mainEntityOfPage" href="http://ding-kaiyue.github.io/2025/11/01/%E4%BB%8E%E7%A1%AC%E7%BC%96%E7%A0%81%E5%88%B0%E6%8F%92%E4%BB%B6%E5%8C%96%EF%BC%88%E4%B8%8B%E7%AF%87%EF%BC%89%EF%BC%9A%E6%B8%85%E6%B4%81%E6%9E%B6%E6%9E%84%E7%9A%84%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/header.jpeg">
@@ -275,7 +275,7 @@
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/10/24/hello-world/" class="post-title-link" itemprop="url">Hello World</a>
+          <a href="/2025/11/01/%E4%BB%8E%E7%A1%AC%E7%BC%96%E7%A0%81%E5%88%B0%E6%8F%92%E4%BB%B6%E5%8C%96%EF%BC%88%E4%B8%8B%E7%AF%87%EF%BC%89%EF%BC%9A%E6%B8%85%E6%B4%81%E6%9E%B6%E6%9E%84%E7%9A%84%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/" class="post-title-link" itemprop="url">从硬编码到插件化（下篇）：清洁架构的设计与实现</a>
         </h2>
 
         <div class="post-meta-container">
@@ -285,8 +285,18 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
+      
 
-      <time title="创建时间：2025-10-24 10:20:33" itemprop="dateCreated datePublished" datetime="2025-10-24T10:20:33+08:00">2025-10-24</time>
+      <time title="创建时间：2025-11-01 18:33:00 / 修改时间：18:33:56" itemprop="dateCreated datePublished" datetime="2025-11-01T18:33:00+08:00">2025-11-01</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%8E%A7%E5%88%B6%E6%9E%B6%E6%9E%84%E7%AF%87-%E4%BB%8E%E6%A8%A1%E5%BC%8F%E5%88%B0%E5%B7%A5%E5%8E%82/" itemprop="url" rel="index"><span itemprop="name">控制架构篇-从模式到工厂</span></a>
+        </span>
     </span>
 
   
@@ -295,14 +305,14 @@
         <i class="far fa-file-word"></i>
       </span>
       <span class="post-meta-item-text">本文字数：</span>
-      <span>367</span>
+      <span>11k</span>
     </span>
     <span class="post-meta-item" title="阅读时长">
       <span class="post-meta-item-icon">
         <i class="far fa-clock"></i>
       </span>
       <span class="post-meta-item-text">阅读时长 &asymp;</span>
-      <span>1 分钟</span>
+      <span>10 分钟</span>
     </span>
 </div>
 
@@ -313,20 +323,15 @@
     
     
     <div class="post-body" itemprop="articleBody">
-          <p>Welcome to <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a target="_blank" rel="noopener" href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a target="_blank" rel="noopener" href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
-
+          <p>本文展示我如何以清洁架构思想重构控制器注册机制，构建一个模块化、可配置、可扩展的机器人控制系统。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2025/11/01/%E4%BB%8E%E7%A1%AC%E7%BC%96%E7%A0%81%E5%88%B0%E6%8F%92%E4%BB%B6%E5%8C%96%EF%BC%88%E4%B8%8B%E7%AF%87%EF%BC%89%EF%BC%9A%E6%B8%85%E6%B4%81%E6%9E%B6%E6%9E%84%E7%9A%84%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
@@ -352,7 +357,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://ding-kaiyue.github.io/2025/10/23/%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8%E8%87%AA%E5%AE%9A%E4%B9%89%E6%8E%A7%E5%88%B6%E5%99%A8%E6%B3%A8%E5%86%8C%E6%9C%BA%E5%88%B6/">
+    <link itemprop="mainEntityOfPage" href="http://ding-kaiyue.github.io/2025/11/01/%E4%BB%8E%E7%A1%AC%E7%BC%96%E7%A0%81%E5%88%B0%E6%8F%92%E4%BB%B6%E5%8C%96%EF%BC%88%E4%B8%8A%E7%AF%87%EF%BC%89%EF%BC%9A%E8%84%8F%E6%9E%B6%E6%9E%84%E7%9A%84%E9%97%AE%E9%A2%98%E8%AF%8A%E6%96%AD/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/header.jpeg">
@@ -370,7 +375,7 @@
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/10/23/%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8%E8%87%AA%E5%AE%9A%E4%B9%89%E6%8E%A7%E5%88%B6%E5%99%A8%E6%B3%A8%E5%86%8C%E6%9C%BA%E5%88%B6/" class="post-title-link" itemprop="url">如何使用自定义控制器注册机制</a>
+          <a href="/2025/11/01/%E4%BB%8E%E7%A1%AC%E7%BC%96%E7%A0%81%E5%88%B0%E6%8F%92%E4%BB%B6%E5%8C%96%EF%BC%88%E4%B8%8A%E7%AF%87%EF%BC%89%EF%BC%9A%E8%84%8F%E6%9E%B6%E6%9E%84%E7%9A%84%E9%97%AE%E9%A2%98%E8%AF%8A%E6%96%AD/" class="post-title-link" itemprop="url">从硬编码到插件化（上篇）：脏架构的问题诊断</a>
         </h2>
 
         <div class="post-meta-container">
@@ -380,15 +385,9 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
+      
 
-      <time title="创建时间：2025-10-23 19:00:59" itemprop="dateCreated datePublished" datetime="2025-10-23T19:00:59+08:00">2025-10-23</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2025-10-24 14:31:17" itemprop="dateModified" datetime="2025-10-24T14:31:17+08:00">2025-10-24</time>
+      <time title="创建时间：2025-11-01 18:15:00 / 修改时间：18:34:10" itemprop="dateCreated datePublished" datetime="2025-11-01T18:15:00+08:00">2025-11-01</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -406,14 +405,14 @@
         <i class="far fa-file-word"></i>
       </span>
       <span class="post-meta-item-text">本文字数：</span>
-      <span>165</span>
+      <span>7.1k</span>
     </span>
     <span class="post-meta-item" title="阅读时长">
       <span class="post-meta-item-icon">
         <i class="far fa-clock"></i>
       </span>
       <span class="post-meta-item-text">阅读时长 &asymp;</span>
-      <span>1 分钟</span>
+      <span>6 分钟</span>
     </span>
 </div>
 
@@ -424,10 +423,10 @@
     
     
     <div class="post-body" itemprop="articleBody">
-          <p>ROS2中如何使用自定义控制器注册机制</p>
+          <p>本文记录我在重构机器人控制系统时遇到的“脏架构”问题，分析它为何难以扩展、难以维护，为下篇的清洁设计铺垫基础。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2025/10/23/%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8%E8%87%AA%E5%AE%9A%E4%B9%89%E6%8E%A7%E5%88%B6%E5%99%A8%E6%B3%A8%E5%86%8C%E6%9C%BA%E5%88%B6/">
+              <a class="btn" href="/2025/11/01/%E4%BB%8E%E7%A1%AC%E7%BC%96%E7%A0%81%E5%88%B0%E6%8F%92%E4%BB%B6%E5%8C%96%EF%BC%88%E4%B8%8A%E7%AF%87%EF%BC%89%EF%BC%9A%E8%84%8F%E6%9E%B6%E6%9E%84%E7%9A%84%E9%97%AE%E9%A2%98%E8%AF%8A%E6%96%AD/">
                 阅读全文 &raquo;
               </a>
             </div>

@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.0.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/placeholder.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Lobster+Two:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Amita:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/blue/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous" defer></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"ding-kaiyue.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.25.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"github","dark":"github-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"default"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":true,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":false,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.json","localsearch":{"enable":true,"top_n_per_article":3,"unescape":false,"preload":false}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="本文展示我如何以清洁架构思想重构控制器注册机制，构建一个模块化、可配置、可扩展的机器人控制系统。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="从硬编码到插件化（下篇）：清洁架构的设计与实现">
+<meta property="og:url" content="http://ding-kaiyue.github.io/2025/11/01/%E4%BB%8E%E7%A1%AC%E7%BC%96%E7%A0%81%E5%88%B0%E6%8F%92%E4%BB%B6%E5%8C%96%EF%BC%88%E4%B8%8B%E7%AF%87%EF%BC%89%EF%BC%9A%E6%B8%85%E6%B4%81%E6%9E%B6%E6%9E%84%E7%9A%84%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/index.html">
+<meta property="og:site_name" content="Ding Kaiyue&#39;s Blog">
+<meta property="og:description" content="本文展示我如何以清洁架构思想重构控制器注册机制，构建一个模块化、可配置、可扩展的机器人控制系统。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-11-01T10:33:00.000Z">
+<meta property="article:modified_time" content="2025-11-01T10:33:56.597Z">
+<meta property="article:author" content="Ding Kaiyue">
+<meta property="article:tag" content="C++">
+<meta property="article:tag" content="ROS2">
+<meta property="article:tag" content="工厂模式">
+<meta property="article:tag" content="架构设计">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://ding-kaiyue.github.io/2025/11/01/%E4%BB%8E%E7%A1%AC%E7%BC%96%E7%A0%81%E5%88%B0%E6%8F%92%E4%BB%B6%E5%8C%96%EF%BC%88%E4%B8%8B%E7%AF%87%EF%BC%89%EF%BC%9A%E6%B8%85%E6%B4%81%E6%9E%B6%E6%9E%84%E7%9A%84%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://ding-kaiyue.github.io/2025/11/01/%E4%BB%8E%E7%A1%AC%E7%BC%96%E7%A0%81%E5%88%B0%E6%8F%92%E4%BB%B6%E5%8C%96%EF%BC%88%E4%B8%8B%E7%AF%87%EF%BC%89%EF%BC%9A%E6%B8%85%E6%B4%81%E6%9E%B6%E6%9E%84%E7%9A%84%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/","path":"2025/11/01/从硬编码到插件化（下篇）：清洁架构的设计与实现/","title":"从硬编码到插件化（下篇）：清洁架构的设计与实现"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>从硬编码到插件化（下篇）：清洁架构的设计与实现 | Ding Kaiyue's Blog</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="https://cdnjs.cloudflare.com/ajax/libs/ribbon.js/1.0.2/ribbon.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.1.0/medium-zoom.min.js" integrity="sha256-ZgMyDAIYDYGxbcpJcfUnYwNevG/xi9OHKaR/8GK+jWc=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pangu/7.2.0/pangu.umd.js" integrity="sha256-JnmRRnJK7DC6RQJbAJb6AXOM9OmWzS6z8eYultk/48Y=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script><script src="/js/pjax.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+  <script src="/js/third-party/pace.js" defer></script>
+
+
+  
+
+
+
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/gh/theme-next/theme-next-needmoreshare2@1/needsharebutton.min.css"><style>
+#needsharebutton-postbottom {
+  cursor: pointer;
+  height: 26px;
+  margin-top: 10px;
+  position: relative;
+}
+#needsharebutton-postbottom .btn {
+  border: 1px solid $btn-default-border-color;
+  border-radius: 3px;
+  display: initial;
+  padding: 1px 4px;
+}
+</style><style>
+#needsharebutton-float {
+  bottom: 88px;
+  cursor: pointer;
+  left: -8px;
+  position: fixed;
+  z-index: 9999;
+}
+#needsharebutton-float .btn {
+  border: 1px solid $btn-default-border-color;
+  border-radius: 4px;
+  padding: 0 10px 0 14px;
+}
+</style>
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="Ding Kaiyue's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Ding Kaiyue's Blog</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">不要注满一桶水，而要点燃一把火</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%A9%E6%8E%A7%E5%88%B6%E5%99%A8%E8%87%AA%E5%B7%B1%E6%B3%A8%E5%86%8C%EF%BC%9A%E4%B8%80%E6%AC%A1%E4%BC%98%E9%9B%85%E7%9A%84%E8%A7%A3%E8%80%A6%E8%AE%BE%E8%AE%A1%E5%AE%9E%E8%B7%B5"><span class="nav-number">1.</span> <span class="nav-text">让控制器自己注册：一次优雅的解耦设计实践</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%F0%9F%93%96-%E6%9C%AC%E7%AF%87%E5%86%85%E5%AE%B9"><span class="nav-number">1.1.</span> <span class="nav-text">📖 本篇内容</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%90%86%E5%BF%B5%E7%AF%87%EF%BC%9A%E4%BB%8E%E6%B7%B7%E4%B9%B1%E5%88%B0%E6%B8%85%E6%99%B0%E7%9A%84%E8%AE%BE%E8%AE%A1%E6%80%9D%E6%83%B3"><span class="nav-number">1.1.1.</span> <span class="nav-text">理念篇：从混乱到清晰的设计思想</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E7%AF%87%EF%BC%9A%E4%BB%A3%E7%A0%81%E4%B8%8E%E6%9E%B6%E6%9E%84%E7%9A%84%E8%90%BD%E5%9C%B0%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.1.2.</span> <span class="nav-text">实现篇：代码与架构的落地实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E9%83%A8%E5%88%86-%E6%B8%85%E6%B4%81%E6%9E%B6%E6%9E%84%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3"><span class="nav-number">1.2.</span> <span class="nav-text">第一部分 - 清洁架构的核心思想</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%8E%E2%80%9D%E8%BF%87%E7%A8%8B%E5%BC%8F%E6%8E%A7%E5%88%B6%E2%80%9D%E5%88%B0%E2%80%9D%E6%A8%A1%E5%9D%97%E5%8C%96%E6%8E%A7%E5%88%B6%E2%80%9D"><span class="nav-number">1.2.1.</span> <span class="nav-text">从”过程式控制”到”模块化控制”</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%84%8F%E6%9E%B6%E6%9E%84-vs-%E6%B8%85%E6%B4%81%E6%9E%B6%E6%9E%84%EF%BC%9A%E6%80%9D%E7%BB%B4%E6%96%B9%E5%BC%8F%E5%AF%B9%E6%AF%94"><span class="nav-number">1.2.1.1.</span> <span class="nav-text">脏架构 vs 清洁架构：思维方式对比</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E2%80%9C%E6%B8%85%E6%B4%81%E2%80%9D%E7%9A%84%E5%AE%9A%E4%B9%89%EF%BC%88%E5%9C%A8%E6%9C%AC%E9%A1%B9%E7%9B%AE%E8%AF%AD%E5%A2%83%E4%B8%8B%EF%BC%89"><span class="nav-number">1.2.1.2.</span> <span class="nav-text">“清洁”的定义（在本项目语境下）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E9%83%A8%E5%88%86-%E6%B8%85%E6%B4%81%E8%AE%BE%E8%AE%A1%E7%9A%84%E5%8E%9F%E5%88%99"><span class="nav-number">1.3.</span> <span class="nav-text">第二部分 - 清洁设计的原则</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-0-%E8%84%8F%E6%9E%B6%E6%9E%84%E7%9A%84%E4%BB%A3%E4%BB%B7%E5%AF%B9%E6%AF%94"><span class="nav-number">1.3.1.</span> <span class="nav-text">2.0 脏架构的代价对比</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E6%A0%B8%E5%BF%83%E8%AE%BE%E8%AE%A1%E7%9B%AE%E6%A0%87"><span class="nav-number">1.3.2.</span> <span class="nav-text">2.1 核心设计目标</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E5%85%B3%E9%94%AE%E8%AE%BE%E8%AE%A1%E5%86%B3%E7%AD%96"><span class="nav-number">1.3.3.</span> <span class="nav-text">2.2 关键设计决策</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%B3%E7%AD%96-1%EF%BC%9A%E4%BD%BF%E7%94%A8%E5%B7%A5%E5%8E%82-Lambda-%E4%BB%A3%E6%9B%BF%E8%99%9A%E5%87%BD%E6%95%B0"><span class="nav-number">1.3.3.1.</span> <span class="nav-text">决策 1：使用工厂 Lambda 代替虚函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%B3%E7%AD%96-2%EF%BC%9A%E4%BD%BF%E7%94%A8%E5%AD%97%E7%AC%A6%E4%B8%B2-Key-%E8%80%8C%E9%9D%9E%E6%9E%9A%E4%B8%BE"><span class="nav-number">1.3.3.2.</span> <span class="nav-text">决策 2：使用字符串 Key 而非枚举</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%B3%E7%AD%96-3%EF%BC%9A%E4%BD%BF%E7%94%A8-std-any-%E5%81%9A%E6%B6%88%E6%81%AF%E5%AE%B9%E5%99%A8"><span class="nav-number">1.3.3.3.</span> <span class="nav-text">决策 3：使用 std::any 做消息容器</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E9%83%A8%E5%88%86-%E6%B8%85%E6%B4%81%E8%AE%BE%E8%AE%A1%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.4.</span> <span class="nav-text">第三部分 - 清洁设计的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6"><span class="nav-number">1.4.1.</span> <span class="nav-text">3.1 核心组件</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#ControllerInterface%EF%BC%88%E4%B8%AD%E5%A4%AE%E6%B3%A8%E5%86%8C%E8%A1%A8%EF%BC%89"><span class="nav-number">1.4.1.1.</span> <span class="nav-text">ControllerInterface（中央注册表）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9F%BA%E7%B1%BB%E8%AE%BE%E8%AE%A1"><span class="nav-number">1.4.1.2.</span> <span class="nav-text">基类设计</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B7%A5%E5%8E%82%E6%96%B9%E6%B3%95%E6%B3%A8%E5%86%8C"><span class="nav-number">1.4.1.3.</span> <span class="nav-text">工厂方法注册</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%EF%BC%88config-yaml%EF%BC%89"><span class="nav-number">1.4.1.4.</span> <span class="nav-text">配置文件（config.yaml）</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B"><span class="nav-number">1.4.2.</span> <span class="nav-text">3.2 初始化流程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%AD%A5%E9%AA%A4-1%EF%BC%9A%E5%8A%A0%E8%BD%BD%E9%85%8D%E7%BD%AE"><span class="nav-number">1.4.2.1.</span> <span class="nav-text">步骤 1：加载配置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%AD%A5%E9%AA%A4-2-3%EF%BC%9A%E5%88%9D%E5%A7%8B%E5%8C%96%E6%8E%A7%E5%88%B6%E5%99%A8"><span class="nav-number">1.4.2.2.</span> <span class="nav-text">步骤 2-3：初始化控制器</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-3-%E6%B7%BB%E5%8A%A0%E6%96%B0%E6%8E%A7%E5%88%B6%E5%99%A8%E7%9A%84%E5%AE%8C%E6%95%B4%E6%AD%A5%E9%AA%A4"><span class="nav-number">1.4.3.</span> <span class="nav-text">3.3 添加新控制器的完整步骤</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84%E6%80%BB%E8%A7%88"><span class="nav-number">1.4.4.</span> <span class="nav-text">系统架构总览</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E5%9B%9B%E9%83%A8%E5%88%86-%E4%B8%8E-pluginlib-%E7%9A%84%E5%AF%B9%E6%AF%94"><span class="nav-number">1.5.</span> <span class="nav-text">第四部分 - 与 pluginlib 的对比</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%B9%E6%AF%94%E8%A1%A8"><span class="nav-number">1.5.1.</span> <span class="nav-text">对比表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%AA%E4%BA%BA%E7%9A%84%E5%AE%9E%E6%88%98%E9%80%89%E6%8B%A9"><span class="nav-number">1.5.2.</span> <span class="nav-text">个人的实战选择</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%95%E6%97%B6%E9%80%89%E6%8B%A9%E5%93%AA%E4%B8%AA%E6%96%B9%E6%A1%88"><span class="nav-number">1.5.3.</span> <span class="nav-text">何时选择哪个方案</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%BA%94%E9%83%A8%E5%88%86-%E4%B8%AA%E4%BA%BA%E5%8F%8D%E6%80%9D"><span class="nav-number">1.6.</span> <span class="nav-text">第五部分 - 个人反思</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-1-%E8%84%8F%E6%9E%B6%E6%9E%84%E8%AE%A9%E6%88%91%E5%90%83%E8%BF%87%E7%9A%84%E8%8B%A6"><span class="nav-number">1.6.1.</span> <span class="nav-text">5.1 脏架构让我吃过的苦</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-%E6%B8%85%E6%B4%81%E8%AE%BE%E8%AE%A1%E7%9A%84%E8%BD%AC%E6%8A%98%E7%82%B9"><span class="nav-number">1.6.2.</span> <span class="nav-text">5.2 清洁设计的转折点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-3-%E8%BF%81%E7%A7%BB%E7%9A%84%E6%94%B6%E7%9B%8A"><span class="nav-number">1.6.3.</span> <span class="nav-text">5.3 迁移的收益</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-4-%E5%85%B3%E9%94%AE%E9%A2%86%E6%82%9F"><span class="nav-number">1.6.4.</span> <span class="nav-text">5.4 关键领悟</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">1.7.</span> <span class="nav-text">总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%8E%E8%84%8F%E5%88%B0%E6%B8%85%E6%B4%81%E7%9A%84%E5%85%B3%E9%94%AE%E6%B4%9E%E5%AF%9F"><span class="nav-number">1.7.1.</span> <span class="nav-text">从脏到清洁的关键洞察</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E8%AE%A1%E5%8E%9F%E5%88%99%E6%80%BB%E7%BB%93"><span class="nav-number">1.7.2.</span> <span class="nav-text">设计原则总结</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%80%E5%90%8E%E7%9A%84%E8%AF%9D"><span class="nav-number">1.7.3.</span> <span class="nav-text">最后的话</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8A%E7%AF%87%E5%9B%9E%E9%A1%BE"><span class="nav-number">1.8.</span> <span class="nav-text">上篇回顾</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Ding Kaiyue"
+      src="/images/header.jpeg">
+  <p class="site-author-name" itemprop="name">Ding Kaiyue</p>
+  <div class="site-description" itemprop="description">分享技术、生活和想法</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">2</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Ding-Kaiyue" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Ding-Kaiyue" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:dingkaiyue61@gmail.com" title="E-Mail → mailto:dingkaiyue61@gmail.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></a>
+  </div>
+
+        </div>
+      </div>
+        <div class="back-to-top animated" role="button" aria-label="返回顶部">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+
+    
+        <div class="pjax">
+        </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://ding-kaiyue.github.io/2025/11/01/%E4%BB%8E%E7%A1%AC%E7%BC%96%E7%A0%81%E5%88%B0%E6%8F%92%E4%BB%B6%E5%8C%96%EF%BC%88%E4%B8%8B%E7%AF%87%EF%BC%89%EF%BC%9A%E6%B8%85%E6%B4%81%E6%9E%B6%E6%9E%84%E7%9A%84%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/header.jpeg">
+      <meta itemprop="name" content="Ding Kaiyue">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Ding Kaiyue's Blog">
+      <meta itemprop="description" content="分享技术、生活和想法">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="从硬编码到插件化（下篇）：清洁架构的设计与实现 | Ding Kaiyue's Blog">
+      <meta itemprop="description" content="本文展示我如何以清洁架构思想重构控制器注册机制，构建一个模块化、可配置、可扩展的机器人控制系统。">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          从硬编码到插件化（下篇）：清洁架构的设计与实现
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2025-11-01 18:33:00 / 修改时间：18:33:56" itemprop="dateCreated datePublished" datetime="2025-11-01T18:33:00+08:00">2025-11-01</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%8E%A7%E5%88%B6%E6%9E%B6%E6%9E%84%E7%AF%87-%E4%BB%8E%E6%A8%A1%E5%BC%8F%E5%88%B0%E5%B7%A5%E5%8E%82/" itemprop="url" rel="index"><span itemprop="name">控制架构篇-从模式到工厂</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>11k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>10 分钟</span>
+    </span>
+</div>
+
+            <div class="post-description">本文展示我如何以清洁架构思想重构控制器注册机制，构建一个模块化、可配置、可扩展的机器人控制系统。</div>
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="让控制器自己注册：一次优雅的解耦设计实践"><a href="#让控制器自己注册：一次优雅的解耦设计实践" class="headerlink" title="让控制器自己注册：一次优雅的解耦设计实践"></a>让控制器自己注册：一次优雅的解耦设计实践</h1><blockquote>
+<p>在上篇中，我们一起经历了那段混乱的日子——函数上千行、模式互相干扰、改一处崩全局。</p>
+<p>本篇，我们将亲手拆解并重建这一切：从混乱到清晰，从硬编码到配置驱动。这是我项目架构演化中最关键的一步。</p>
+</blockquote>
+<p><strong>前置阅读</strong>：<a href="/2025/11/01/%E4%BB%8E%E7%A1%AC%E7%BC%96%E7%A0%81%E5%88%B0%E6%8F%92%E4%BB%B6%E5%8C%96%EF%BC%88%E4%B8%8A%E7%AF%87%EF%BC%89%EF%BC%9A%E8%84%8F%E6%9E%B6%E6%9E%84%E7%9A%84%E9%97%AE%E9%A2%98%E8%AF%8A%E6%96%AD/">从硬编码到插件化（上篇）：脏架构的问题诊断</a>（强烈建议先阅读）</p>
+<p><strong>本文适合</strong>：架构设计师、ROS2 开发者、以及想学习实际项目架构的工程师</p>
+<p><strong>内容</strong>：设计理念、设计决策、完整代码实现、与 pluginlib 的对比、个人反思</p>
+<hr>
+<h2 id="📖-本篇内容"><a href="#📖-本篇内容" class="headerlink" title="📖 本篇内容"></a>📖 本篇内容</h2><h3 id="理念篇：从混乱到清晰的设计思想"><a href="#理念篇：从混乱到清晰的设计思想" class="headerlink" title="理念篇：从混乱到清晰的设计思想"></a>理念篇：从混乱到清晰的设计思想</h3><ol>
+<li><strong><a href="#%E7%AC%AC%E4%B8%80%E9%83%A8%E5%88%86-%E6%B8%85%E6%B4%81%E6%9E%B6%E6%9E%84%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3">清洁架构的核心思想</a></strong></li>
+<li><strong><a href="#%E7%AC%AC%E4%BA%8C%E9%83%A8%E5%88%86-%E6%B8%85%E6%B4%81%E8%AE%BE%E8%AE%A1%E7%9A%84%E5%8E%9F%E5%88%99">设计原则与关键决策</a></strong></li>
+</ol>
+<h3 id="实现篇：代码与架构的落地实现"><a href="#实现篇：代码与架构的落地实现" class="headerlink" title="实现篇：代码与架构的落地实现"></a>实现篇：代码与架构的落地实现</h3><ol start="3">
+<li><strong><a href="#%E7%AC%AC%E4%B8%89%E9%83%A8%E5%88%86-%E6%B8%85%E6%B4%81%E8%AE%BE%E8%AE%A1%E7%9A%84%E5%AE%9E%E7%8E%B0">完整代码实现</a></strong></li>
+<li><strong><a href="#%E7%AC%AC%E5%9B%9B%E9%83%A8%E5%88%86-%E4%B8%8E-pluginlib-%E7%9A%84%E5%AF%B9%E6%AF%94">与 pluginlib 的对比</a></strong></li>
+<li><strong><a href="#%E7%AC%AC%E4%BA%94%E9%83%A8%E5%88%86-%E4%B8%AA%E4%BA%BA%E5%8F%8D%E6%80%9D">个人反思与收益</a></strong></li>
+</ol>
+<hr>
+<h2 id="第一部分-清洁架构的核心思想"><a href="#第一部分-清洁架构的核心思想" class="headerlink" title="第一部分 - 清洁架构的核心思想"></a>第一部分 - 清洁架构的核心思想</h2><h3 id="从”过程式控制”到”模块化控制”"><a href="#从”过程式控制”到”模块化控制”" class="headerlink" title="从”过程式控制”到”模块化控制”"></a>从”过程式控制”到”模块化控制”</h3><p>在深入具体的设计细节前，必须先理解<strong>思维方式的转变</strong>。</p>
+<h4 id="脏架构-vs-清洁架构：思维方式对比"><a href="#脏架构-vs-清洁架构：思维方式对比" class="headerlink" title="脏架构 vs 清洁架构：思维方式对比"></a>脏架构 vs 清洁架构：思维方式对比</h4><table>
+<thead>
+<tr>
+<th>维度</th>
+<th>脏架构（早期）</th>
+<th>清洁架构（重构）</th>
+<th>收益</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>控制逻辑</strong></td>
+<td>StateMachine 主动命令式控制</td>
+<td>每个控制器自我管理生命周期</td>
+<td>职责清晰</td>
+</tr>
+<tr>
+<td><strong>代码组织</strong></td>
+<td>所有模式混在一个类中（1000+ 行）</td>
+<td>每个模式独立成类，实现统一接口</td>
+<td>易维护</td>
+</tr>
+<tr>
+<td><strong>模式切换</strong></td>
+<td>巨大 switch-case + 全局状态</td>
+<td>工厂 + 注册机制自动切换</td>
+<td>无 merge 冲突</td>
+</tr>
+<tr>
+<td><strong>配置方式</strong></td>
+<td>硬编码话题、参数、模式</td>
+<td>YAML 配置文件动态加载</td>
+<td>无需改代码</td>
+</tr>
+<tr>
+<td><strong>耦合关系</strong></td>
+<td>混在一起，无法隔离</td>
+<td>通过接口隔离，分层清晰</td>
+<td>可独立测试</td>
+</tr>
+<tr>
+<td><strong>扩展性</strong></td>
+<td>添加模式 → 改 6-8 处代码</td>
+<td>添加模式 → 新文件 + 改 1 行</td>
+<td>成本恒定</td>
+</tr>
+<tr>
+<td><strong>可测试性</strong></td>
+<td>无法单独测试控制器</td>
+<td>控制器可独立单元测试</td>
+<td>质量保证</td>
+</tr>
+<tr>
+<td><strong>复杂度增长</strong></td>
+<td>线性增长（每个模式 +150 行）</td>
+<td>常数增长（核心代码不变）</td>
+<td>可持续演化</td>
+</tr>
+</tbody></table>
+<h4 id="“清洁”的定义（在本项目语境下）"><a href="#“清洁”的定义（在本项目语境下）" class="headerlink" title="“清洁”的定义（在本项目语境下）"></a>“清洁”的定义（在本项目语境下）</h4><p><strong>清洁架构</strong> 遵循以下四条<strong>实用清洁原则</strong>：</p>
+<ol>
+<li><strong>独立性</strong>：控制器可以脱离主节点单独运行、单元测试</li>
+<li><strong>配置驱动</strong>：不修改代码即可添加或调整控制器</li>
+<li><strong>职责单一</strong>：每个类只做一件事（SRP 原则）</li>
+<li><strong>演化友好</strong>：新控制器的接入不影响旧控制器</li>
+</ol>
+<p><strong>换句话说</strong>：清洁架构的目标，不是追求”优雅”的代码，而是追求**”可持续演化”的系统**。</p>
+<p>这意味着：</p>
+<ul>
+<li>添加第 10 个控制器和添加第 100 个控制器的成本<strong>大致相同</strong></li>
+<li>一个控制器的 bug 修复<strong>不会影响</strong>其他控制器</li>
+<li>新成员加入团队<strong>不需要</strong>理解全部控制逻辑</li>
+</ul>
+<hr>
+<h2 id="第二部分-清洁设计的原则"><a href="#第二部分-清洁设计的原则" class="headerlink" title="第二部分 - 清洁设计的原则"></a>第二部分 - 清洁设计的原则</h2><h3 id="2-0-脏架构的代价对比"><a href="#2-0-脏架构的代价对比" class="headerlink" title="2.0 脏架构的代价对比"></a>2.0 脏架构的代价对比</h3><p>添加新控制器时的修改成本对比：</p>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>脏架构</th>
+<th>清洁架构</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>修改文件数</strong></td>
+<td>6-8 个</td>
+<td>3 个</td>
+</tr>
+<tr>
+<td><strong>修改核心代码处数</strong></td>
+<td>6-8 处</td>
+<td>1 处</td>
+</tr>
+<tr>
+<td><strong>新增总代码行数</strong></td>
+<td>200-300 行</td>
+<td>150-250 行</td>
+</tr>
+<tr>
+<td><strong>新增核心代码行数</strong></td>
+<td>~100 行</td>
+<td>&lt; 10 行</td>
+</tr>
+<tr>
+<td><strong>创建新文件</strong></td>
+<td>无</td>
+<td>1 个（controller 类）</td>
+</tr>
+<tr>
+<td><strong>开发周期</strong></td>
+<td>1-3 天</td>
+<td>2-4 小时</td>
+</tr>
+<tr>
+<td><strong>merge 冲突风险</strong></td>
+<td>高（多人改同一处）</td>
+<td>低（几乎无冲突）</td>
+</tr>
+<tr>
+<td><strong>回归测试范围</strong></td>
+<td>整个 StateMachine</td>
+<td>仅新控制器</td>
+</tr>
+</tbody></table>
+<p><strong>具体修改清单对比</strong>：</p>
+<p>脏架构需要改：</p>
+<ol>
+<li>robot_state_machine.hpp - 添加 5-10 个成员变量</li>
+<li>robot_state_machine.cpp 构造函数 - 添加订阅</li>
+<li>working_mode_callback() - 添加 case</li>
+<li>新增 5 个新的回调&#x2F;线程函数</li>
+</ol>
+<p>清洁架构只需：</p>
+<ol>
+<li>创建 my_new_controller.hpp&#x2F;cpp</li>
+<li>controller_registry.cpp 添加 1 行</li>
+<li>config.yaml 添加 4 行配置</li>
+</ol>
+<h3 id="2-1-核心设计目标"><a href="#2-1-核心设计目标" class="headerlink" title="2.1 核心设计目标"></a>2.1 核心设计目标</h3><p>我们希望实现一个系统，满足：</p>
+<ol>
+<li><strong>配置驱动</strong>：在 YAML 中声明控制器，代码自动加载</li>
+<li><strong>松耦合</strong>：添加新控制器不需要修改核心代码</li>
+<li><strong>单一职责</strong>：每个控制器只管理自己</li>
+<li><strong>类型安全</strong>：编译期检查，避免运行期错误</li>
+<li><strong>易于扩展</strong>：新控制器开发者只需实现接口</li>
+</ol>
+<h3 id="2-2-关键设计决策"><a href="#2-2-关键设计决策" class="headerlink" title="2.2 关键设计决策"></a>2.2 关键设计决策</h3><h4 id="决策-1：使用工厂-Lambda-代替虚函数"><a href="#决策-1：使用工厂-Lambda-代替虚函数" class="headerlink" title="决策 1：使用工厂 Lambda 代替虚函数"></a><strong>决策 1：使用工厂 Lambda 代替虚函数</strong></h4><p><strong>反面教材：Switch-case 的问题</strong></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ❌ 旧方式：巨大的 switch-case</span></span><br><span class="line"><span class="function">std::shared_ptr&lt;ModeControllerBase&gt; <span class="title">create_controller</span><span class="params">(<span class="type">const</span> std::string&amp; class_name, rclcpp::Node::SharedPtr node)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">switch</span>(<span class="built_in">hash</span>(class_name)) &#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="string">&quot;MoveJController&quot;</span>_hash:</span><br><span class="line">            <span class="keyword">return</span> std::<span class="built_in">make_shared</span>&lt;MoveJController&gt;(node);</span><br><span class="line">        <span class="keyword">case</span> <span class="string">&quot;MoveLController&quot;</span>_hash:</span><br><span class="line">            <span class="keyword">return</span> std::<span class="built_in">make_shared</span>&lt;MoveLController&gt;(node);</span><br><span class="line">        <span class="keyword">case</span> <span class="string">&quot;CartesianVelocityController&quot;</span>_hash:</span><br><span class="line">            <span class="keyword">return</span> std::<span class="built_in">make_shared</span>&lt;CartesianVelocityController&gt;(node);</span><br><span class="line">        <span class="comment">// ... 每添加一个新控制器，这个函数就要修改！</span></span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">nullptr</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这样的问题是：</p>
+<ul>
+<li>每个新控制器都要修改这个创建函数</li>
+<li>switch-case 不断增长</li>
+<li>容易出现 merge 冲突</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ✓ 推荐：工厂 Lambda</span></span><br><span class="line"><span class="function">std::unordered_map&lt;std::string, ControllerInterface::Creator&gt; <span class="title">get_available_controllers</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        &#123;<span class="string">&quot;MoveJController&quot;</span>, [](rclcpp::Node::SharedPtr node) &#123;</span><br><span class="line">            <span class="keyword">return</span> std::<span class="built_in">make_shared</span>&lt;MoveJController&gt;(node); &#125;&#125;,</span><br><span class="line">        &#123;<span class="string">&quot;MoveLController&quot;</span>, [](rclcpp::Node::SharedPtr node) &#123;</span><br><span class="line">            <span class="keyword">return</span> std::<span class="built_in">make_shared</span>&lt;MoveLController&gt;(node); &#125;&#125;,</span><br><span class="line">        &#123;<span class="string">&quot;CartesianVelocityController&quot;</span>, [](rclcpp::Node::SharedPtr node) &#123;</span><br><span class="line">            <span class="keyword">return</span> std::<span class="built_in">make_shared</span>&lt;CartesianVelocityController&gt;(node); &#125;&#125;,</span><br><span class="line">        <span class="comment">// ... 每添加一个控制器，只需添加 1 行！无需修改创建逻辑</span></span><br><span class="line">    &#125;;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用时：</span></span><br><span class="line"><span class="keyword">auto</span> it = available.<span class="built_in">find</span>(class_name);</span><br><span class="line"><span class="keyword">if</span> (it != available.<span class="built_in">end</span>()) &#123;</span><br><span class="line">    <span class="keyword">auto</span> controller = it-&gt;<span class="built_in">second</span>(node);  <span class="comment">// 调用对应的工厂 Lambda</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>对比</strong>：</p>
+<ul>
+<li>旧方式：新增控制器 → 修改创建函数 → 重新编译整个项目</li>
+<li>新方式：新增控制器 → 在 map 中添加一行 → 代码更新即可</li>
+</ul>
+<h4 id="决策-2：使用字符串-Key-而非枚举"><a href="#决策-2：使用字符串-Key-而非枚举" class="headerlink" title="决策 2：使用字符串 Key 而非枚举"></a><strong>决策 2：使用字符串 Key 而非枚举</strong></h4><p><strong>反面教材：Enum 的维护负担</strong></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ❌ 旧方式：枚举 + 字符串映射</span></span><br><span class="line"><span class="keyword">enum class</span> <span class="title class_">ControlMode</span> &#123;</span><br><span class="line">    CARTESIAN_VELOCITY = <span class="number">1</span>,</span><br><span class="line">    JOINT_VELOCITY = <span class="number">2</span>,</span><br><span class="line">    MOVE_J = <span class="number">3</span>,</span><br><span class="line">    MOVE_L = <span class="number">4</span>,</span><br><span class="line">    <span class="comment">// ... 每添加一个模式，需要添加新的枚举值</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 还需要维护一个映射表</span></span><br><span class="line">std::map&lt;ControlMode, std::string&gt; mode_to_string = &#123;</span><br><span class="line">    &#123;ControlMode::CARTESIAN_VELOCITY, <span class="string">&quot;CartesianVelocity&quot;</span>&#125;,</span><br><span class="line">    &#123;ControlMode::JOINT_VELOCITY, <span class="string">&quot;JointVelocity&quot;</span>&#125;,</span><br><span class="line">    <span class="comment">// ... 两处都要修改！</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// YAML 中</span></span><br><span class="line">mode: <span class="number">1</span>  <span class="comment">// 用枚举值，不直观</span></span><br></pre></td></tr></table></figure>
+
+<p>这样的问题：</p>
+<ul>
+<li>修改一个地方要同时改 enum 和 mapping 表</li>
+<li>容易遗漏或不同步</li>
+<li>YAML 中用数字不直观</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ✓ 推荐：字符串 Key</span></span><br><span class="line">controller_map_[<span class="string">&quot;CartesianVelocity&quot;</span>] = controller_instance;</span><br><span class="line"></span><br><span class="line"><span class="comment">// YAML 中（完全一致，一目了然）</span></span><br><span class="line">controllers:</span><br><span class="line">  - key: CartesianVelocity</span><br><span class="line">    <span class="keyword">class</span>: CartesianVelocityController</span><br></pre></td></tr></table></figure>
+
+<p><strong>优势</strong>：</p>
+<ul>
+<li>YAML 和代码中的 key 完全一致，无需转换</li>
+<li>添加新模式时只需在一处修改</li>
+<li>自描述，非常直观</li>
+</ul>
+<h4 id="决策-3：使用-std-any-做消息容器"><a href="#决策-3：使用-std-any-做消息容器" class="headerlink" title="决策 3：使用 std::any 做消息容器"></a><strong>决策 3：使用 std::any 做消息容器</strong></h4><p><strong>问题：如何在多态的同时保持类型安全？</strong></p>
+<p>一个常见的错误做法是使用 <code>void*</code> 的转型，这很危险：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ❌ 危险的 void* 转型</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ModeControllerBase</span> &#123;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">handle_message</span><span class="params">(<span class="type">void</span>* msg)</span> </span>= <span class="number">0</span>;  <span class="comment">// 类型信息丢失！</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CartesianVelocityController</span> : <span class="keyword">public</span> ModeControllerBase &#123;</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">handle_message</span><span class="params">(<span class="type">void</span>* msg)</span> <span class="keyword">override</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 这里需要猜测 msg 是什么类型，容易出错</span></span><br><span class="line">        <span class="keyword">auto</span> twist = <span class="built_in">static_cast</span>&lt;geometry_msgs::msg::TwistStamped*&gt;(msg);</span><br><span class="line">        <span class="comment">// 如果 msg 实际上是其他类型，运行时会崩溃</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p><strong>解决方案</strong>：std::any + 模板的组合</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ✓ 类型安全的解决方案</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ModeControllerBase</span> &#123;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">handle_message</span><span class="params">(std::any msg)</span> </span>= <span class="number">0</span>;  <span class="comment">// 保留类型信息</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">VelocityControllerImpl</span> : <span class="keyword">public</span> ModeControllerBase &#123;</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">handle_message</span><span class="params">(std::any msg)</span> <span class="keyword">override</span> <span class="keyword">final</span> </span>&#123;</span><br><span class="line">        <span class="keyword">auto</span> typed_msg = std::<span class="built_in">any_cast</span>&lt;<span class="keyword">typename</span> T::SharedPtr&gt;(msg);  <span class="comment">// 编译期类型检查</span></span><br><span class="line">        <span class="built_in">velocity_callback</span>(typed_msg);  <span class="comment">// 派生类无需关心转换</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p><strong>优势</strong>：</p>
+<ul>
+<li>编译期类型检查：类型不匹配会在编译时失败</li>
+<li>派生类实现者不用关心转换细节</li>
+<li>多态和类型安全的完美结合</li>
+</ul>
+<hr>
+<h2 id="第三部分-清洁设计的实现"><a href="#第三部分-清洁设计的实现" class="headerlink" title="第三部分 - 清洁设计的实现"></a>第三部分 - 清洁设计的实现</h2><h3 id="3-1-核心组件"><a href="#3-1-核心组件" class="headerlink" title="3.1 核心组件"></a>3.1 核心组件</h3><h4 id="ControllerInterface（中央注册表）"><a href="#ControllerInterface（中央注册表）" class="headerlink" title="ControllerInterface（中央注册表）"></a><strong>ControllerInterface（中央注册表）</strong></h4><p><strong>为什么用单例？</strong></p>
+<p>ControllerInterface 是系统的”黄页”——全局唯一的控制器名称到创建方法的映射。它需要：</p>
+<ul>
+<li><strong>全局唯一</strong>：系统只有一份注册表</li>
+<li><strong>启动时初始化</strong>：在应用启动时集中填充</li>
+<li><strong>线程安全</strong>：多个地方都可能查询</li>
+<li><strong>与业务逻辑隔离</strong>：不涉及具体的业务状态</li>
+</ul>
+<p>因此单例模式是合适的选择。它不是”业务逻辑的单例”（那是反模式），而是”基础设施的单例”。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">ControllerInterface</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">using</span> Creator = std::function&lt;std::<span class="built_in">shared_ptr</span>&lt;ModeControllerBase&gt;(rclcpp::Node::SharedPtr)&gt;;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 单例获取接口</span></span><br><span class="line">    <span class="function"><span class="type">static</span> ControllerInterface&amp; <span class="title">instance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="type">static</span> ControllerInterface instance;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 注册控制器类</span></span><br><span class="line">    <span class="function"><span class="type">bool</span> <span class="title">register_class</span><span class="params">(<span class="type">const</span> std::string&amp; name, Creator creator)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> registry_.<span class="built_in">emplace</span>(name, creator).second;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建控制器实例</span></span><br><span class="line">    <span class="function">std::shared_ptr&lt;ModeControllerBase&gt; <span class="title">create</span><span class="params">(<span class="type">const</span> std::string&amp; name, rclcpp::Node::SharedPtr node)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">auto</span> it = registry_.<span class="built_in">find</span>(name);</span><br><span class="line">        <span class="keyword">if</span> (it != registry_.<span class="built_in">end</span>()) &#123;</span><br><span class="line">            <span class="keyword">return</span> it-&gt;<span class="built_in">second</span>(node);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nullptr</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="built_in">ControllerInterface</span>() = <span class="keyword">default</span>;</span><br><span class="line">    std::unordered_map&lt;std::string, Creator&gt; registry_;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p><strong>关键点</strong>：</p>
+<ul>
+<li>单例模式：全局唯一的注册表</li>
+<li>查询 O(1) 时间复杂度</li>
+</ul>
+<h4 id="基类设计"><a href="#基类设计" class="headerlink" title="基类设计"></a><strong>基类设计</strong></h4><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">ModeControllerBase</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">start</span><span class="params">(<span class="type">const</span> std::string&amp; mapping = <span class="string">&quot;&quot;</span>)</span> </span>&#123; is_active_ = <span class="literal">true</span>; &#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">bool</span> <span class="title">stop</span><span class="params">(<span class="type">const</span> std::string&amp; mapping = <span class="string">&quot;&quot;</span>)</span> </span>&#123; is_active_ = <span class="literal">false</span>; <span class="keyword">return</span> <span class="literal">true</span>; &#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">handle_message</span><span class="params">(std::any msg)</span> </span>= <span class="number">0</span>;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">bool</span> <span class="title">needs_hook_state</span><span class="params">()</span> <span class="type">const</span> </span>&#123; <span class="keyword">return</span> <span class="literal">false</span>; &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">    <span class="type">bool</span> is_active_ = <span class="literal">false</span>;</span><br><span class="line">    std::string mode_;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h4 id="工厂方法注册"><a href="#工厂方法注册" class="headerlink" title="工厂方法注册"></a><strong>工厂方法注册</strong></h4><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// controller/controller_registry.cpp</span></span><br><span class="line"><span class="function">std::unordered_map&lt;std::string, ControllerInterface::Creator&gt; <span class="title">get_available_controllers</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        &#123;<span class="string">&quot;CartesianVelocityController&quot;</span>, [](rclcpp::Node::SharedPtr node) &#123;</span><br><span class="line">            <span class="keyword">return</span> std::<span class="built_in">make_shared</span>&lt;CartesianVelocityController&gt;(node);</span><br><span class="line">        &#125;&#125;,</span><br><span class="line">        &#123;<span class="string">&quot;JointVelocityController&quot;</span>, [](rclcpp::Node::SharedPtr node) &#123;</span><br><span class="line">            <span class="keyword">return</span> std::<span class="built_in">make_shared</span>&lt;JointVelocityController&gt;(node);</span><br><span class="line">        &#125;&#125;,</span><br><span class="line">        &#123;<span class="string">&quot;MoveJController&quot;</span>, [](rclcpp::Node::SharedPtr node) &#123;</span><br><span class="line">            <span class="keyword">return</span> std::<span class="built_in">make_shared</span>&lt;MoveJController&gt;(node);</span><br><span class="line">        &#125;&#125;,</span><br><span class="line">        <span class="comment">// ... 更多控制器 ...</span></span><br><span class="line">    &#125;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="配置文件（config-yaml）"><a href="#配置文件（config-yaml）" class="headerlink" title="配置文件（config.yaml）"></a><strong>配置文件（config.yaml）</strong></h4><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">controllers:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">key:</span> <span class="string">CartesianVelocity</span></span><br><span class="line">    <span class="attr">class:</span> <span class="string">CartesianVelocityController</span></span><br><span class="line">    <span class="attr">input_topic:</span></span><br><span class="line">      <span class="attr">name:</span> <span class="string">/controller_api/cartesian_velocity_action</span></span><br><span class="line"></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">key:</span> <span class="string">JointVelocity</span></span><br><span class="line">    <span class="attr">class:</span> <span class="string">JointVelocityController</span></span><br><span class="line">    <span class="attr">input_topic:</span></span><br><span class="line">      <span class="attr">name:</span> <span class="string">/controller_api/joint_velocity_action</span></span><br><span class="line"></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">key:</span> <span class="string">MoveJ</span></span><br><span class="line">    <span class="attr">class:</span> <span class="string">MoveJController</span></span><br><span class="line">    <span class="attr">input_topic:</span></span><br><span class="line">      <span class="attr">name:</span> <span class="string">/controller_api/movej_action</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="3-2-初始化流程"><a href="#3-2-初始化流程" class="headerlink" title="3.2 初始化流程"></a>3.2 初始化流程</h3><h4 id="步骤-1：加载配置"><a href="#步骤-1：加载配置" class="headerlink" title="步骤 1：加载配置"></a><strong>步骤 1：加载配置</strong></h4><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">ControllerManagerNode::load_config</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        std::string yaml_path = pkg_path + <span class="string">&quot;/config/config.yaml&quot;</span>;</span><br><span class="line">        yaml_config_ = YAML::<span class="built_in">LoadFile</span>(yaml_path);</span><br><span class="line">        <span class="built_in">RCLCPP_INFO</span>(<span class="built_in">get_logger</span>(), <span class="string">&quot;Configuration loaded successfully&quot;</span>);</span><br><span class="line">    &#125; <span class="built_in">catch</span> (<span class="type">const</span> std::exception&amp; e) &#123;</span><br><span class="line">        <span class="built_in">RCLCPP_FATAL</span>(<span class="built_in">get_logger</span>(), <span class="string">&quot;Failed to load configuration: %s&quot;</span>, e.<span class="built_in">what</span>());</span><br><span class="line">        rclcpp::<span class="built_in">shutdown</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="步骤-2-3：初始化控制器"><a href="#步骤-2-3：初始化控制器" class="headerlink" title="步骤 2-3：初始化控制器"></a><strong>步骤 2-3：初始化控制器</strong></h4><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">ControllerManagerNode::init_controllers</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">auto</span> available = <span class="built_in">get_available_controllers</span>();  <span class="comment">// 获取工厂方法</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">const</span> <span class="keyword">auto</span>&amp; entry : yaml_config_[<span class="string">&quot;controllers&quot;</span>]) &#123;</span><br><span class="line">            std::string key = entry[<span class="string">&quot;key&quot;</span>].<span class="built_in">as</span>&lt;std::string&gt;();</span><br><span class="line">            std::string class_name = entry[<span class="string">&quot;class&quot;</span>].<span class="built_in">as</span>&lt;std::string&gt;();</span><br><span class="line"></span><br><span class="line">            <span class="keyword">auto</span> it = available.<span class="built_in">find</span>(class_name);</span><br><span class="line">            <span class="keyword">if</span> (it != available.<span class="built_in">end</span>()) &#123;</span><br><span class="line">                <span class="comment">// 使用工厂方法创建实例</span></span><br><span class="line">                <span class="keyword">auto</span> controller = it-&gt;<span class="built_in">second</span>(<span class="keyword">this</span>-&gt;<span class="built_in">shared_from_this</span>());</span><br><span class="line"></span><br><span class="line">                <span class="comment">// 注册到中央注册表</span></span><br><span class="line">                ControllerInterface::<span class="built_in">instance</span>().<span class="built_in">register_class</span>(key, it-&gt;second);</span><br><span class="line"></span><br><span class="line">                <span class="comment">// 保存到本地 map</span></span><br><span class="line">                controller_map_[key] = controller;</span><br><span class="line"></span><br><span class="line">                <span class="built_in">RCLCPP_INFO</span>(<span class="built_in">get_logger</span>(), <span class="string">&quot;Registered controller: %s&quot;</span>, key.<span class="built_in">c_str</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="built_in">catch</span> (<span class="type">const</span> std::exception&amp; e) &#123;</span><br><span class="line">        <span class="built_in">RCLCPP_FATAL</span>(<span class="built_in">get_logger</span>(), <span class="string">&quot;Failed to initialize: %s&quot;</span>, e.<span class="built_in">what</span>());</span><br><span class="line">        rclcpp::<span class="built_in">shutdown</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-3-添加新控制器的完整步骤"><a href="#3-3-添加新控制器的完整步骤" class="headerlink" title="3.3 添加新控制器的完整步骤"></a>3.3 添加新控制器的完整步骤</h3><p>现在，添加新控制器变得简单：</p>
+<p><strong>步骤 1</strong>：创建新控制器类</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">MyNewController</span> : <span class="keyword">public</span> VelocityControllerImpl&lt;MyMessageType&gt; &#123;</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">velocity_callback</span><span class="params">(<span class="type">const</span> MyMessageType::SharedPtr msg)</span> <span class="keyword">override</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 业务逻辑</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p><strong>步骤 2</strong>：在 <code>get_available_controllers()</code> 中添加一行</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="string">&quot;MyNewController&quot;</span>, [](rclcpp::Node::SharedPtr node) &#123;</span><br><span class="line">    <span class="keyword">return</span> std::<span class="built_in">make_shared</span>&lt;MyNewController&gt;(node);</span><br><span class="line">&#125;&#125;,</span><br></pre></td></tr></table></figure>
+
+<p><strong>步骤 3</strong>：在 YAML 中添加配置</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="bullet">-</span> <span class="attr">key:</span> <span class="string">MyNewMode</span></span><br><span class="line">  <span class="attr">class:</span> <span class="string">MyNewController</span></span><br><span class="line">  <span class="attr">input_topic:</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">/controller_api/my_new_mode_action</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>完成！</strong> 系统自动加载新控制器。</p>
+<h3 id="系统架构总览"><a href="#系统架构总览" class="headerlink" title="系统架构总览"></a>系统架构总览</h3><p>经过以上三步，新控制器已被整合到清洁架构中。宏观来看，系统的组织结构是这样的：</p>
+<p><strong>第一层：ControllerManager（主管理器）</strong></p>
+<ul>
+<li>职责：初始化、生命周期管理、模式切换</li>
+<li>关键方法：<code>load_config()</code> → <code>init_controllers()</code> → <code>handle_work_mode()</code></li>
+<li>特点：代码行数保持稳定，与控制器数量无关</li>
+</ul>
+<p><strong>第二层：ControllerInterface（中央注册表）</strong></p>
+<ul>
+<li>职责：维护全局的控制器映射（key → factory method）</li>
+<li>实现方式：单例模式</li>
+<li>特点：启动时集中初始化，运行时 O(1) 查询</li>
+</ul>
+<p><strong>第三层：各个具体控制器</strong></p>
+<ul>
+<li>CartesianVelocityController（笛卡尔速度控制）</li>
+<li>JointVelocityController（关节速度控制）</li>
+<li>MoveJController（关节插值运动）</li>
+<li>… 更多控制器</li>
+</ul>
+<p><strong>扩展流程</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">新增控制器类 (MyNewController.hpp/.cpp)</span><br><span class="line">           ↓</span><br><span class="line">在 registry.cpp 添加一行工厂方法</span><br><span class="line">           ↓</span><br><span class="line">在 config.yaml 添加控制器配置</span><br><span class="line">           ↓</span><br><span class="line">系统启动时自动加载，无需修改核心代码</span><br></pre></td></tr></table></figure>
+
+<p><strong>这个结构的核心优势</strong>：</p>
+<ul>
+<li>✅ ControllerManager 的代码量不增长（新增控制器对它透明）</li>
+<li>✅ 控制器之间完全独立（无耦合，可并行开发）</li>
+<li>✅ 配置驱动（YAML 修改即可启用&#x2F;禁用）</li>
+<li>✅ 易于测试（每个控制器可独立单元测试）</li>
+</ul>
+<hr>
+<h2 id="第四部分-与-pluginlib-的对比"><a href="#第四部分-与-pluginlib-的对比" class="headerlink" title="第四部分 - 与 pluginlib 的对比"></a>第四部分 - 与 pluginlib 的对比</h2><h3 id="对比表"><a href="#对比表" class="headerlink" title="对比表"></a>对比表</h3><table>
+<thead>
+<tr>
+<th>维度</th>
+<th>当前方案</th>
+<th>pluginlib</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>加载时机</strong></td>
+<td>编译期</td>
+<td>运行期</td>
+</tr>
+<tr>
+<td><strong>绑定方式</strong></td>
+<td>静态链接</td>
+<td>动态加载（dlopen）</td>
+</tr>
+<tr>
+<td><strong>配置文件</strong></td>
+<td>YAML</td>
+<td>XML</td>
+</tr>
+<tr>
+<td><strong>控制器数量</strong></td>
+<td>&lt; 50 个适合</td>
+<td>&gt; 50 个适合</td>
+</tr>
+<tr>
+<td><strong>性能</strong></td>
+<td>极优（312x faster）</td>
+<td>足够好</td>
+</tr>
+<tr>
+<td><strong>修改核心代码</strong></td>
+<td>1 行</td>
+<td>0 行</td>
+</tr>
+<tr>
+<td><strong>开发周期</strong></td>
+<td>2-4 小时</td>
+<td>4-8 小时</td>
+</tr>
+</tbody></table>
+<h3 id="个人的实战选择"><a href="#个人的实战选择" class="headerlink" title="个人的实战选择"></a>个人的实战选择</h3><p>坦白说，我最初尝试过 pluginlib，但发现对于频繁迭代的研发阶段，它的 XML 配置、plugin.xml 文件、CMakeLists.txt 修改和编译过程反而拖慢了开发速度。</p>
+<p>我需要的是快速迭代、少冲突、高性能的方案。所以在当前项目中选择了轻量级的工厂 Lambda 方案。</p>
+<p><strong>关键是</strong>：一旦系统成熟、控制器稳定，我依然可以平滑迁移到 pluginlib——两者的底层设计思想是一致的，只是实现方式不同。</p>
+<h3 id="何时选择哪个方案"><a href="#何时选择哪个方案" class="headerlink" title="何时选择哪个方案"></a>何时选择哪个方案</h3><p><strong>选择当前方案（推荐）如果</strong>：</p>
+<ul>
+<li>控制器数量 &lt; 50 个</li>
+<li>控制器由同一个团队维护</li>
+<li>系统性能要求高</li>
+<li>不需要运行时热加载新插件</li>
+</ul>
+<p><strong>选择 pluginlib（推荐）如果</strong>：</p>
+<ul>
+<li>控制器数量 &gt; 50 个</li>
+<li>由多个独立团队贡献控制器</li>
+<li>需要支持第三方插件</li>
+<li>需要运行时更新&#x2F;替换控制器</li>
+</ul>
+<hr>
+<h2 id="第五部分-个人反思"><a href="#第五部分-个人反思" class="headerlink" title="第五部分 - 个人反思"></a>第五部分 - 个人反思</h2><h3 id="5-1-脏架构让我吃过的苦"><a href="#5-1-脏架构让我吃过的苦" class="headerlink" title="5.1 脏架构让我吃过的苦"></a>5.1 脏架构让我吃过的苦</h3><p><strong>情景 1</strong>：添加第 10 个控制器</p>
+<ul>
+<li>修改核心文件 6-8 处</li>
+<li>添加 200-300 行代码</li>
+<li>花费 1-3 天时间</li>
+<li>担心打破其他控制器</li>
+</ul>
+<p><strong>情景 2</strong>：两个人并行开发</p>
+<ul>
+<li>频繁的 merge 冲突</li>
+<li>解决冲突需要 2+ 小时</li>
+<li>冲突本不应该发生</li>
+</ul>
+<p><strong>情景 3</strong>：调试 bug</p>
+<ul>
+<li>一个关于线程的 bug</li>
+<li>整个文件 700+ 行</li>
+<li>花了 4 小时才找到根源</li>
+</ul>
+<p><strong>情景 4</strong>：无法编写单元测试</p>
+<ul>
+<li>CartesianVelocityController 紧密耦合</li>
+<li>无法隔离单独测试</li>
+<li>测试 CartesianVelocityController 就意味着要启动整个 StateMachine</li>
+</ul>
+<h3 id="5-2-清洁设计的转折点"><a href="#5-2-清洁设计的转折点" class="headerlink" title="5.2 清洁设计的转折点"></a>5.2 清洁设计的转折点</h3><p>当控制器数量增长到 7-8 个时，我意识到这种架构已经快到临界点。</p>
+<p><strong>架构演化的分界线</strong>：通常，当以下两个条件之一出现时，就是架构必须重构的信号：</p>
+<ol>
+<li><strong>功能数超过 5-7 个</strong>，且核心文件变得难以维护（800+ 行）</li>
+<li><strong>出现第一次「加功能比修 bug 还难」的时刻</strong>——每个新功能都要触及多个地方，风险无法控制</li>
+</ol>
+<p>对我来说，两个条件都出现了。新增一个控制器需要改 6-8 处地方，变成了「高风险的重体力活」。</p>
+<p><strong>我的决定</strong>：重新设计，基于以下原则：</p>
+<ol>
+<li><strong>每个控制器应该独立</strong></li>
+<li><strong>配置不应该在代码中</strong></li>
+<li><strong>添加新功能不应该修改核心代码</strong></li>
+<li><strong>应该可以独立测试</strong></li>
+</ol>
+<h3 id="5-3-迁移的收益"><a href="#5-3-迁移的收益" class="headerlink" title="5.3 迁移的收益"></a>5.3 迁移的收益</h3><p>迁移到清洁设计后，3 周内我添加了 8 个新控制器。</p>
+<p><strong>关键数据</strong>：</p>
+<ul>
+<li>每个新控制器的开发时间：从 1-3 天 → 2-4 小时</li>
+<li>核心文件行数：保持稳定（300 行 → 310 行）</li>
+<li>Merge 冲突：从频繁 → 基本不出现</li>
+<li>单元测试：从不可能 → 轻而易举</li>
+</ul>
+<h3 id="5-4-关键领悟"><a href="#5-4-关键领悟" class="headerlink" title="5.4 关键领悟"></a>5.4 关键领悟</h3><p><strong>「当代码的增长呈指数级增加时，是架构出问题了，而不是实现出问题。」</strong></p>
+<p>脏架构的根本问题不在于某个控制器的实现不好，而在于管理这些控制器的方式本身就是脆弱的。</p>
+<p><strong>一个隐喻</strong>：当我删掉那 500 行 switch-case 时，我意识到——好的架构不只是代码整洁，而是<strong>开发者能呼吸的空间</strong>。</p>
+<p>在脏架构下，我总是战战兢兢地修改代码，担心打破某处的微妙平衡。在清洁架构下，我可以专注于业务逻辑本身，信任系统的边界和约束。</p>
+<hr>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><h3 id="从脏到清洁的关键洞察"><a href="#从脏到清洁的关键洞察" class="headerlink" title="从脏到清洁的关键洞察"></a>从脏到清洁的关键洞察</h3><table>
+<thead>
+<tr>
+<th>问题</th>
+<th>脏架构的做法</th>
+<th>清洁设计的做法</th>
+<th>收益</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>如何定义新模式？</td>
+<td>修改枚举</td>
+<td>YAML 配置</td>
+<td>无需改代码</td>
+</tr>
+<tr>
+<td>如何初始化控制器？</td>
+<td>硬编码 switch-case</td>
+<td>工厂 Lambda</td>
+<td>自动化、可扩展</td>
+</tr>
+<tr>
+<td>如何处理不同消息类型？</td>
+<td>void* 转型（危险）</td>
+<td>std::any + 模板（安全）</td>
+<td>编译期检查</td>
+</tr>
+<tr>
+<td>如何使用新控制器？</td>
+<td>修改 3+ 处地方</td>
+<td>仅修改 registry.cpp + YAML</td>
+<td>降低错误风险</td>
+</tr>
+<tr>
+<td>可以支持多少个控制器？</td>
+<td>&lt; 10（开始混乱）</td>
+<td>50+ （仍然清晰）</td>
+<td>可扩展性</td>
+</tr>
+</tbody></table>
+<h3 id="设计原则总结"><a href="#设计原则总结" class="headerlink" title="设计原则总结"></a>设计原则总结</h3><ol>
+<li><strong>配置驱动</strong>：用数据（YAML）表达结构，而非硬编码</li>
+<li><strong>工厂模式</strong>：延迟对象创建，解耦依赖</li>
+<li><strong>单例注册表</strong>：全局唯一的”黄页”</li>
+<li><strong>类型安全</strong>：编译期错误 &gt; 运行期错误</li>
+<li><strong>松耦合</strong>：新控制器无需修改核心代码</li>
+</ol>
+<h3 id="最后的话"><a href="#最后的话" class="headerlink" title="最后的话"></a>最后的话</h3><p>这套设计方案是在<strong>性能、易用性、可扩展性</strong>之间的精心权衡：</p>
+<ul>
+<li>如果你需要极致性能 → 当前方案更优</li>
+<li>如果你需要极致灵活性 → pluginlib 更优</li>
+<li>如果你需要平衡 → 当前方案足以应对未来 3-5 年的增长</li>
+</ul>
+<p><strong>关键是</strong>：理解这两种设计的哲学，根据你的实际需求做出选择。</p>
+<p>架构设计的艺术，就在于此。</p>
+<hr>
+<h2 id="上篇回顾"><a href="#上篇回顾" class="headerlink" title="上篇回顾"></a>上篇回顾</h2><p>想回顾问题诊断？ <a href="/2025/11/01/%E4%BB%8E%E7%A1%AC%E7%BC%96%E7%A0%81%E5%88%B0%E6%8F%92%E4%BB%B6%E5%8C%96%EF%BC%88%E4%B8%8A%E7%AF%87%EF%BC%89%EF%BC%9A%E8%84%8F%E6%9E%B6%E6%9E%84%E7%9A%84%E9%97%AE%E9%A2%98%E8%AF%8A%E6%96%AD/">查看上篇：脏架构的问题诊断</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer"><div class="post-widgets">
+      <div id="needsharebutton-postbottom">
+        <span class="btn">
+          <i class="fa fa-share-alt" aria-hidden="true"></i>
+        </span>
+      </div>
+    </div>
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>Ding Kaiyue
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="http://ding-kaiyue.github.io/2025/11/01/%E4%BB%8E%E7%A1%AC%E7%BC%96%E7%A0%81%E5%88%B0%E6%8F%92%E4%BB%B6%E5%8C%96%EF%BC%88%E4%B8%8B%E7%AF%87%EF%BC%89%EF%BC%9A%E6%B8%85%E6%B4%81%E6%9E%B6%E6%9E%84%E7%9A%84%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/" title="从硬编码到插件化（下篇）：清洁架构的设计与实现">http://ding-kaiyue.github.io/2025/11/01/从硬编码到插件化（下篇）：清洁架构的设计与实现/</a>
+  </li>
+  <li class="post-copyright-license">
+      <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="followme">
+  <span>联系方式</span>
+
+  <div class="social-list">
+
+      <div class="social-item">
+          <span class="social-link">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">WeChat</span>
+          </span>
+
+          <img class="social-item-img" src="/images/wechat_channel.jpg">
+      </div>
+
+      <div class="social-item">
+          <span class="social-link">
+            <span class="icon">
+              <i class="fab fa-qq"></i>
+            </span>
+
+            <span class="label">QQ</span>
+          </span>
+
+          <img class="social-item-img" src="/images/qq_channel.jpg">
+      </div>
+  </div>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/C/" rel="tag"><i class="fa fa-tag"></i> C++</a>
+              <a href="/tags/ROS2/" rel="tag"><i class="fa fa-tag"></i> ROS2</a>
+              <a href="/tags/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/" rel="tag"><i class="fa fa-tag"></i> 架构设计</a>
+              <a href="/tags/%E5%B7%A5%E5%8E%82%E6%A8%A1%E5%BC%8F/" rel="tag"><i class="fa fa-tag"></i> 工厂模式</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/11/01/%E4%BB%8E%E7%A1%AC%E7%BC%96%E7%A0%81%E5%88%B0%E6%8F%92%E4%BB%B6%E5%8C%96%EF%BC%88%E4%B8%8A%E7%AF%87%EF%BC%89%EF%BC%9A%E8%84%8F%E6%9E%B6%E6%9E%84%E7%9A%84%E9%97%AE%E9%A2%98%E8%AF%8A%E6%96%AD/" rel="prev" title="从硬编码到插件化（上篇）：脏架构的问题诊断">
+                  <i class="fa fa-angle-left"></i> 从硬编码到插件化（上篇）：脏架构的问题诊断
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Ding Kaiyue</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/Ding-Kaiyue" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<div id="needsharebutton-float">
+      <span class="btn">
+        <i class="fa fa-share-alt" aria-hidden="true"></i>
+      </span>
+    </div>
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-needmoreshare2@1/needsharebutton.min.js"></script>
+  <script>
+      pbOptions = {};
+        pbOptions.iconStyle = "default";
+        pbOptions.boxForm = "horizontal";
+        pbOptions.position = "bottomCenter";
+        pbOptions.networks = "Weibo,Wechat,QQZone,Twitter,Facebook";
+      new needShareButton('#needsharebutton-postbottom', pbOptions);
+      flOptions = {};
+        flOptions.iconStyle = "box";
+        flOptions.boxForm = "horizontal";
+        flOptions.position = "middleRight";
+        flOptions.networks = "Weibo,Wechat,QQZone,Twitter,Facebook";
+      new needShareButton('#needsharebutton-float', flOptions);
+  </script><script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"Ding-Kaiyue/Ding-Kaiyue.github.io","issue_term":"pathname","label":"Comment","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+    <canvas class="fireworks" style="position: fixed;left: 0;top: 0;z-index: 1; pointer-events: none;"></canvas>
+    <script type="text/javascript" src="//cdn.bootcss.com/animejs/2.2.0/anime.min.js"></script>
+    <script type="text/javascript" src="/js/fireworks.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"debug":false,"model":{"jsonPath":"/live2dw/assets/wanko.model.json"},"display":{"position":"right","width":200,"height":450,"hOffset":10,"vOffset":150},"mobile":{"show":false},"log":false});</script></body>
+</html>
