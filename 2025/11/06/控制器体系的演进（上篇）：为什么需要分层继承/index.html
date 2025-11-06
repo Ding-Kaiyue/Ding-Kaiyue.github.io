@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.0.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/placeholder.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Exo:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Fira+Code:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/blue/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous" defer></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"ding-kaiyue.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.25.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"github","dark":"github-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"default"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":true,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":false,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.json","localsearch":{"enable":true,"top_n_per_article":3,"unescape":false,"preload":false}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="本文通过对比不同类型的控制器，揭示分层继承设计的本质原因——控制交互模式的差异。从单基类的问题出发，说明为什么需要VelocityControllerBase（速度指令控制）、TrajectoryControllerBase（轨迹规划执行）、TeachControllerBase（记录&#x2F;复现）和UtilityControllerBase（状态驱动执行）四个第二层基类。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="控制器体系的演进（上篇）：为什么需要分层继承">
+<meta property="og:url" content="http://ding-kaiyue.github.io/2025/11/06/%E6%8E%A7%E5%88%B6%E5%99%A8%E4%BD%93%E7%B3%BB%E7%9A%84%E6%BC%94%E8%BF%9B%EF%BC%88%E4%B8%8A%E7%AF%87%EF%BC%89%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E5%88%86%E5%B1%82%E7%BB%A7%E6%89%BF/index.html">
+<meta property="og:site_name" content="Ding Kaiyue&#39;s Blog">
+<meta property="og:description" content="本文通过对比不同类型的控制器，揭示分层继承设计的本质原因——控制交互模式的差异。从单基类的问题出发，说明为什么需要VelocityControllerBase（速度指令控制）、TrajectoryControllerBase（轨迹规划执行）、TeachControllerBase（记录&#x2F;复现）和UtilityControllerBase（状态驱动执行）四个第二层基类。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-11-06T05:00:00.000Z">
+<meta property="article:modified_time" content="2025-11-06T09:06:04.902Z">
+<meta property="article:author" content="Ding Kaiyue">
+<meta property="article:tag" content="C++">
+<meta property="article:tag" content="ROS2">
+<meta property="article:tag" content="控制系统架构">
+<meta property="article:tag" content="继承设计">
+<meta property="article:tag" content="设计模式">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://ding-kaiyue.github.io/2025/11/06/%E6%8E%A7%E5%88%B6%E5%99%A8%E4%BD%93%E7%B3%BB%E7%9A%84%E6%BC%94%E8%BF%9B%EF%BC%88%E4%B8%8A%E7%AF%87%EF%BC%89%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E5%88%86%E5%B1%82%E7%BB%A7%E6%89%BF/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://ding-kaiyue.github.io/2025/11/06/%E6%8E%A7%E5%88%B6%E5%99%A8%E4%BD%93%E7%B3%BB%E7%9A%84%E6%BC%94%E8%BF%9B%EF%BC%88%E4%B8%8A%E7%AF%87%EF%BC%89%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E5%88%86%E5%B1%82%E7%BB%A7%E6%89%BF/","path":"2025/11/06/控制器体系的演进（上篇）：为什么需要分层继承/","title":"控制器体系的演进（上篇）：为什么需要分层继承"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>控制器体系的演进（上篇）：为什么需要分层继承 | Ding Kaiyue's Blog</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="https://cdnjs.cloudflare.com/ajax/libs/ribbon.js/1.0.2/ribbon.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.1.0/medium-zoom.min.js" integrity="sha256-ZgMyDAIYDYGxbcpJcfUnYwNevG/xi9OHKaR/8GK+jWc=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pangu/7.2.0/pangu.umd.js" integrity="sha256-JnmRRnJK7DC6RQJbAJb6AXOM9OmWzS6z8eYultk/48Y=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script><script src="/js/pjax.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+  <script src="/js/third-party/pace.js" defer></script>
+
+
+  
+
+
+
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/gh/theme-next/theme-next-needmoreshare2@1/needsharebutton.min.css"><style>
+#needsharebutton-postbottom {
+  cursor: pointer;
+  height: 26px;
+  margin-top: 10px;
+  position: relative;
+}
+#needsharebutton-postbottom .btn {
+  border: 1px solid $btn-default-border-color;
+  border-radius: 3px;
+  display: initial;
+  padding: 1px 4px;
+}
+</style><style>
+#needsharebutton-float {
+  bottom: 88px;
+  cursor: pointer;
+  left: -8px;
+  position: fixed;
+  z-index: 9999;
+}
+#needsharebutton-float .btn {
+  border: 1px solid $btn-default-border-color;
+  border-radius: 4px;
+  padding: 0 10px 0 14px;
+}
+</style>
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="Ding Kaiyue's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Ding Kaiyue's Blog</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">不要注满一桶水，而要点燃一把火</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%AC%E7%AF%87%E5%86%85%E5%AE%B9"><span class="nav-number">1.</span> <span class="nav-text">本篇内容</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E9%97%AE%E9%A2%98%E5%BC%95%E5%85%A5%EF%BC%9A%E4%BB%8E%E6%8E%A7%E5%88%B6%E5%99%A8%E5%85%B1%E6%80%A7%E5%88%B0%E5%B7%AE%E5%BC%82%E6%80%A7"><span class="nav-number">2.</span> <span class="nav-text">1. 问题引入：从控制器共性到差异性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E5%9B%9B%E7%B1%BB%E6%8E%A7%E5%88%B6%E5%99%A8%E7%9A%84%E4%BA%A4%E4%BA%92%E6%A8%A1%E5%BC%8F%E5%88%86%E6%9E%90"><span class="nav-number">3.</span> <span class="nav-text">2. 四类控制器的交互模式分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-JointVelocityController-%E2%80%94-%E5%85%B3%E8%8A%82%E7%A9%BA%E9%97%B4%E9%80%9F%E5%BA%A6%E6%8E%A7%E5%88%B6"><span class="nav-number">3.1.</span> <span class="nav-text">2.1 JointVelocityController — 关节空间速度控制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-MoveJController-%E2%80%94-%E8%BD%A8%E8%BF%B9%E8%A7%84%E5%88%92%E4%B8%8E%E6%89%A7%E8%A1%8C"><span class="nav-number">3.2.</span> <span class="nav-text">2.2 MoveJController — 轨迹规划与执行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-UtilityControllerBase%E7%9A%84%E5%AD%90%E7%B1%BB-%E2%80%94-%E7%8A%B6%E6%80%81%E9%A9%B1%E5%8A%A8%E6%89%A7%E8%A1%8C"><span class="nav-number">3.3.</span> <span class="nav-text">2.3 UtilityControllerBase的子类 — 状态驱动执行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-4-TeachControllerBase%E7%9A%84%E5%AD%90%E7%B1%BB-%E2%80%94-%E7%A4%BA%E6%95%99%E4%B8%8E%E8%BD%A8%E8%BF%B9%E7%AE%A1%E7%90%86"><span class="nav-number">3.4.</span> <span class="nav-text">2.4 TeachControllerBase的子类 — 示教与轨迹管理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2-4-1-PointRecordController-%E2%80%94-%E9%87%87%E9%9B%86%E4%B8%8E%E5%AD%98%E5%82%A8%EF%BC%88%E5%8F%AA%E8%AF%BB%EF%BC%89"><span class="nav-number">3.4.1.</span> <span class="nav-text">2.4.1 PointRecordController — 采集与存储（只读）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-4-2-TrajectoryReplayController-%E2%80%94-%E8%BD%A8%E8%BF%B9%E5%A4%8D%E7%8E%B0%EF%BC%88%E6%89%A7%E8%A1%8C%E5%9E%8B%EF%BC%89"><span class="nav-number">3.4.2.</span> <span class="nav-text">2.4.2 TrajectoryReplayController — 轨迹复现（执行型）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#TeachControllerBase-%E7%9A%84%E7%BB%9F%E4%B8%80%E7%89%B9%E7%82%B9"><span class="nav-number">3.4.3.</span> <span class="nav-text">TeachControllerBase 的统一特点</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E7%B1%BB%E6%8E%A7%E5%88%B6%E5%99%A8%E5%AF%B9%E6%AF%94%E8%A1%A8"><span class="nav-number">4.</span> <span class="nav-text">四类控制器对比表</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%8D%95%E5%9F%BA%E7%B1%BB%E6%96%B9%E6%A1%88%E7%9A%84%E5%B1%80%E9%99%90%E6%80%A7"><span class="nav-number">5.</span> <span class="nav-text">3. 单基类方案的局限性</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%981%EF%BC%9A%E6%B6%88%E6%81%AF%E7%B1%BB%E5%9E%8B%E6%B7%B7%E6%B7%86%E5%92%8C%E4%BB%A3%E7%A0%81%E9%87%8D%E5%A4%8D"><span class="nav-number">5.1.</span> <span class="nav-text">问题1：消息类型混淆和代码重复</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%982%EF%BC%9A%E6%8E%A7%E5%88%B6%E4%BA%A4%E4%BA%92%E6%A8%A1%E5%BC%8F%E7%9A%84%E6%B7%B7%E6%9D%82"><span class="nav-number">5.2.</span> <span class="nav-text">问题2：控制交互模式的混杂</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%983%EF%BC%9A%E6%96%B0%E5%A2%9E%E6%8E%A7%E5%88%B6%E5%99%A8%E7%9A%84%E5%9B%B0%E9%9A%BE"><span class="nav-number">5.3.</span> <span class="nav-text">问题3：新增控制器的困难</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E5%88%86%E5%B1%82%E7%BB%A7%E6%89%BF%E7%9A%84%E6%9E%B6%E6%9E%84%E4%BE%9D%E6%8D%AE"><span class="nav-number">6.</span> <span class="nav-text">4. 分层继承的架构依据</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E5%B1%82%EF%BC%9AModeControllerBase%EF%BC%88%E5%9F%BA%E7%A1%80%E6%A1%86%E6%9E%B6%EF%BC%89"><span class="nav-number">6.1.</span> <span class="nav-text">第一层：ModeControllerBase（基础框架）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E5%B1%82%EF%BC%9A%E6%8C%89%E6%8E%A7%E5%88%B6%E4%BA%A4%E4%BA%92%E6%A8%A1%E5%BC%8F%E5%88%86%E5%8C%96"><span class="nav-number">6.2.</span> <span class="nav-text">第二层：按控制交互模式分化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SOLID%E5%8E%9F%E5%88%99%E5%AF%B9%E5%BA%94"><span class="nav-number">6.3.</span> <span class="nav-text">SOLID原则对应</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E6%80%BB%E7%BB%93%E4%B8%8E%E8%AE%BE%E8%AE%A1%E5%90%AF%E7%A4%BA"><span class="nav-number">7.</span> <span class="nav-text">5. 总结与设计启示</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8B%E7%AF%87%E9%A2%84%E5%91%8A"><span class="nav-number">8.</span> <span class="nav-text">下篇预告</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Ding Kaiyue"
+      src="/images/header.jpeg">
+  <p class="site-author-name" itemprop="name">Ding Kaiyue</p>
+  <div class="site-description" itemprop="description">分享技术、生活和想法</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">5</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Ding-Kaiyue" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Ding-Kaiyue" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:dingkaiyue61@gmail.com" title="E-Mail → mailto:dingkaiyue61@gmail.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></a>
+  </div>
+
+        </div>
+      </div>
+        <div class="back-to-top animated" role="button" aria-label="返回顶部">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+
+    
+        <div class="pjax">
+        </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://ding-kaiyue.github.io/2025/11/06/%E6%8E%A7%E5%88%B6%E5%99%A8%E4%BD%93%E7%B3%BB%E7%9A%84%E6%BC%94%E8%BF%9B%EF%BC%88%E4%B8%8A%E7%AF%87%EF%BC%89%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E5%88%86%E5%B1%82%E7%BB%A7%E6%89%BF/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/header.jpeg">
+      <meta itemprop="name" content="Ding Kaiyue">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Ding Kaiyue's Blog">
+      <meta itemprop="description" content="分享技术、生活和想法">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="控制器体系的演进（上篇）：为什么需要分层继承 | Ding Kaiyue's Blog">
+      <meta itemprop="description" content="本文通过对比不同类型的控制器，揭示分层继承设计的本质原因——控制交互模式的差异。从单基类的问题出发，说明为什么需要VelocityControllerBase（速度指令控制）、TrajectoryControllerBase（轨迹规划执行）、TeachControllerBase（记录&#x2F;复现）和UtilityControllerBase（状态驱动执行）四个第二层基类。">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          控制器体系的演进（上篇）：为什么需要分层继承
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2025-11-06 13:00:00 / 修改时间：17:06:04" itemprop="dateCreated datePublished" datetime="2025-11-06T13:00:00+08:00">2025-11-06</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%8E%A7%E5%88%B6%E6%9E%B6%E6%9E%84%E7%AF%87-%E4%BB%8E%E6%A8%A1%E5%BC%8F%E5%88%B0%E5%B7%A5%E5%8E%82/" itemprop="url" rel="index"><span itemprop="name">控制架构篇-从模式到工厂</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>7.1k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>6 分钟</span>
+    </span>
+</div>
+
+            <div class="post-description">本文通过对比不同类型的控制器，揭示分层继承设计的本质原因——控制交互模式的差异。从单基类的问题出发，说明为什么需要VelocityControllerBase（速度指令控制）、TrajectoryControllerBase（轨迹规划执行）、TeachControllerBase（记录/复现）和UtilityControllerBase（状态驱动执行）四个第二层基类。</div>
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><blockquote>
+<p>这是一篇关于控制器继承体系设计的深度分析。从”为什么”的角度，揭示分层设计的本质原因——它关乎<strong>控制交互模式</strong>的本质差异。</p>
+</blockquote>
+<p><strong>本文适合</strong>：架构设计师、ROS2 开发者、以及关心代码质量的工程师</p>
+<p><strong>核心观点</strong>：不同控制器最根本的差异在于<strong>控制交互模式</strong>的不同。VelocityControllerBase 用于速度指令控制，TrajectoryControllerBase 用于轨迹规划和执行，TeachControllerBase 用于记录&#x2F;复现，UtilityControllerBase 用于状态驱动执行。这种差异决定了我们需要分层继承体系。</p>
+<hr>
+<h2 id="本篇内容"><a href="#本篇内容" class="headerlink" title="本篇内容"></a>本篇内容</h2><ol>
+<li><strong><a href="#1-%E9%97%AE%E9%A2%98%E5%BC%95%E5%85%A5%E4%BB%8E%E6%8E%A7%E5%88%B6%E5%99%A8%E5%85%B1%E6%80%A7%E5%88%B0%E5%B7%AE%E5%BC%82%E6%80%A7">问题引入：从控制器共性到差异性</a></strong></li>
+<li><strong><a href="#2-%E5%9B%9B%E7%B1%BB%E6%8E%A7%E5%88%B6%E5%99%A8%E7%9A%84%E4%BA%A4%E4%BA%92%E6%A8%A1%E5%BC%8F%E5%88%86%E6%9E%90">四类控制器的交互模式分析</a></strong></li>
+<li><strong><a href="#3-%E5%8D%95%E5%9F%BA%E7%B1%BB%E6%96%B9%E6%A1%88%E7%9A%84%E5%B1%80%E9%99%90%E6%80%A7">单基类方案的局限性</a></strong></li>
+<li><strong><a href="#4-%E5%88%86%E5%B1%82%E7%BB%A7%E6%89%BF%E7%9A%84%E6%9E%B6%E6%9E%84%E4%BE%9D%E6%8D%AE">分层继承的架构依据</a></strong></li>
+<li><strong><a href="#5-%E6%80%BB%E7%BB%93%E4%B8%8E%E8%AE%BE%E8%AE%A1%E5%90%AF%E7%A4%BA">总结与设计启示</a></strong></li>
+</ol>
+<hr>
+<p><a id="1-问题引入从控制器共性到差异性"></a></p>
+<h2 id="1-问题引入：从控制器共性到差异性"><a href="#1-问题引入：从控制器共性到差异性" class="headerlink" title="1. 问题引入：从控制器共性到差异性"></a>1. 问题引入：从控制器共性到差异性</h2><p>当我们设计一个机器人控制框架时，会很快发现：不同控制模式看似相似，实则遵循着截然不同的交互逻辑。</p>
+<p>JointVelocity、MoveJ、Move2Initial、ROS2ActionControl、TrajectoryRecord——它们都被称作”控制器”，都实现了统一的 <code>start()</code>、<code>stop()</code> 接口。但它们之间真正的边界，不在功能层，而在<strong>控制交互模式</strong>的本质差异上。</p>
+<p>从系统语义的角度看，这五个控制器的交互方式完全不同：</p>
+<ul>
+<li><strong>JointVelocity</strong>：速度指令控制 — 接收速度指令，直接发给电机</li>
+<li><strong>MoveJ</strong>：轨迹规划执行 — 接收目标位置，规划轨迹后执行</li>
+<li><strong>Move2Initial</strong>：状态驱动执行 — 进入模式就执行预定义动作</li>
+<li><strong>ROS2ActionControl</strong>：外部接口驱动 — 通过ROS Action接收目标，与状态机同步</li>
+<li><strong>TrajectoryRecord</strong>：记录采集 — 接收轨迹名称，采集和存储机械臂的运动数据</li>
+</ul>
+<p><strong>核心问题</strong>：直觉上我们会尝试用一个统一的基类 <code>ModeControllerBase</code> 来抽象它们。但从系统语义的角度看，它们在交互方式与状态管理机制上的差异是根本性的，单一基类方案无法优雅地处理这些本质差异。</p>
+<p>答案是<strong>分层继承</strong>——关键在于，分层的依据必须是<strong>控制交互模式的差异</strong>，而非表面的功能相似性。</p>
+<hr>
+<p><a id="2-四类控制器的交互模式分析"></a></p>
+<h2 id="2-四类控制器的交互模式分析"><a href="#2-四类控制器的交互模式分析" class="headerlink" title="2. 四类控制器的交互模式分析"></a>2. 四类控制器的交互模式分析</h2><p>下面我们从交互模式的角度，依次分析四类常见控制器的特征与区别。</p>
+<h3 id="2-1-JointVelocityController-—-关节空间速度控制"><a href="#2-1-JointVelocityController-—-关节空间速度控制" class="headerlink" title="2.1 JointVelocityController — 关节空间速度控制"></a>2.1 JointVelocityController — 关节空间速度控制</h3><p><strong>消息类型</strong>：<code>sensor_msgs/msg/JointState</code>（速度指令）</p>
+<p><strong>控制交互模式</strong>：<strong>某关节的速度命令</strong></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// JointVelocityController：接收速度指令，直接驱动电机</span></span><br><span class="line"><span class="comment">// 核心特点：消息到达 → 立即执行，无规划周期</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">JointVelocityController::velocity_callback</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="type">const</span> sensor_msgs::msg::JointState::SharedPtr msg)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">apply_joint_velocity</span>(msg-&gt;velocity);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>关键特征</strong>：</p>
+<ul>
+<li><strong>交互语义</strong>：速度命令持久化 — 接收速度指令后，电机持续执行该速度直至新指令到达</li>
+<li><strong>消息处理</strong>：即时驱动 — 每条速度消息直接映射为电机指令</li>
+<li><strong>状态管理</strong>：速度模式 — 电机在速度闭环中工作，无需规划周期</li>
+<li><strong>hook_state需求</strong>：必需 — 模式切换时需显式停止指令(0速度)</li>
+</ul>
+<hr>
+<h3 id="2-2-MoveJController-—-轨迹规划与执行"><a href="#2-2-MoveJController-—-轨迹规划与执行" class="headerlink" title="2.2 MoveJController — 轨迹规划与执行"></a>2.2 MoveJController — 轨迹规划与执行</h3><p><strong>消息类型</strong>：<code>sensor_msgs::msg::JointState</code>（目标位置）</p>
+<p><strong>控制交互模式</strong>：<strong>轨迹规划执行</strong></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// MoveJController：接收目标位置，规划轨迹后执行</span></span><br><span class="line"><span class="comment">// 核心特点：目标到达 → 规划轨迹 → 插值执行，有明确的执行生命周期</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">MoveJController::trajectory_callback</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="type">const</span> sensor_msgs::msg::JointState::SharedPtr msg)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">plan_and_execute</span>(msg-&gt;position);  <span class="comment">/* 规划 + 插值 + 执行 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>关键特征</strong>：</p>
+<ul>
+<li><strong>交互语义</strong>：目标驱动规划执行 — 接收目标位置，内部规划轨迹并逐点执行</li>
+<li><strong>消息处理</strong>：批量驱动 — 一条目标消息触发完整的规划-插值-执行周期</li>
+<li><strong>状态管理</strong>：位置模式 — 电机在位置闭环中工作，有明确的规划和执行生命周期</li>
+<li><strong>hook_state需求</strong>：必需 — 执行中模式切换需要安全过渡机制</li>
+</ul>
+<p><strong>与JointVelocity的本质差异</strong>：</p>
+<ul>
+<li>JointVelocity：即时驱动的<strong>速度模式</strong> — 消息到达即执行，无规划周期</li>
+<li>MoveJ：批量驱动的<strong>位置模式</strong> — 从目标到执行中间需要规划和插值</li>
+</ul>
+<hr>
+<h3 id="2-3-UtilityControllerBase的子类-—-状态驱动执行"><a href="#2-3-UtilityControllerBase的子类-—-状态驱动执行" class="headerlink" title="2.3 UtilityControllerBase的子类 — 状态驱动执行"></a>2.3 UtilityControllerBase的子类 — 状态驱动执行</h3><p><strong>驱动机制</strong>：无特定ROS消息，由内部状态机或外部服务接口驱动</p>
+<p><strong>典型例子</strong>：</p>
+<ul>
+<li><strong>ROS2ActionControl</strong> — 通过ROS2 Action Server接收目标，与执行器同步</li>
+<li><strong>Move2Initial</strong> — 启动时自动执行预定义的安全回收动作</li>
+</ul>
+<p><strong>关键特征</strong>：</p>
+<ul>
+<li><strong>交互语义</strong>：状态驱动或服务驱动 — 不受特定消息话题约束</li>
+<li><strong>消息处理</strong>：无固定模式 — 通过Action Server、内部计时器或状态事件驱动</li>
+<li><strong>状态管理</strong>：多态 — 同一基类下可承载完全不同的执行策略</li>
+<li><strong>hook_state需求</strong>：可选 — 取决于具体实现的执行特性</li>
+</ul>
+<p><strong>与前两类的本质差异</strong>：</p>
+<ul>
+<li>不是消息驱动，而是由内部或外部事件驱动</li>
+<li>没有统一的消息接口，各个实现可独立定义交互协议</li>
+</ul>
+<hr>
+<h3 id="2-4-TeachControllerBase的子类-—-示教与轨迹管理"><a href="#2-4-TeachControllerBase的子类-—-示教与轨迹管理" class="headerlink" title="2.4 TeachControllerBase的子类 — 示教与轨迹管理"></a>2.4 TeachControllerBase的子类 — 示教与轨迹管理</h3><p><strong>消息类型</strong>：<code>std_msgs/String</code>（指定轨迹或点的名称）</p>
+<p><strong>包含两个不同的子类型</strong>：</p>
+<h4 id="2-4-1-PointRecordController-—-采集与存储（只读）"><a href="#2-4-1-PointRecordController-—-采集与存储（只读）" class="headerlink" title="2.4.1 PointRecordController — 采集与存储（只读）"></a>2.4.1 PointRecordController — 采集与存储（只读）</h4><p><strong>交互语义</strong>：采集驱动的记录 — 接收点名字，采集当前机械臂位置并存储</p>
+<p><strong>关键特征</strong>：</p>
+<ul>
+<li><strong>消息处理</strong>：固定String类型 — 解析点名字，触发采集动作</li>
+<li><strong>状态管理</strong>：只读操作 — 不改变机械臂状态，仅采集和持久化当前状态</li>
+<li><strong>hook_state需求</strong>：不需要 — 采集操作不涉及动作切换</li>
+</ul>
+<h4 id="2-4-2-TrajectoryReplayController-—-轨迹复现（执行型）"><a href="#2-4-2-TrajectoryReplayController-—-轨迹复现（执行型）" class="headerlink" title="2.4.2 TrajectoryReplayController — 轨迹复现（执行型）"></a>2.4.2 TrajectoryReplayController — 轨迹复现（执行型）</h4><p><strong>交互语义</strong>：轨迹名字驱动的执行 — 接收轨迹名字，从存储中加载轨迹并执行</p>
+<p><strong>关键特征</strong>：</p>
+<ul>
+<li><strong>消息处理</strong>：固定String类型 — 解析轨迹名字，触发加载和执行</li>
+<li><strong>状态管理</strong>：修改操作 — 改变机械臂状态，需要完整的规划和执行周期</li>
+<li><strong>hook_state需求</strong>：必需 — 执行中模式切换需要安全过渡机制</li>
+</ul>
+<h4 id="TeachControllerBase-的统一特点"><a href="#TeachControllerBase-的统一特点" class="headerlink" title="TeachControllerBase 的统一特点"></a>TeachControllerBase 的统一特点</h4><p><strong>核心语义差异</strong>：</p>
+<ul>
+<li>两个子类型都基于 String 消息确定”操作目标”（点名字或轨迹名字）</li>
+<li>PointRecord 是”采集侧”：系统状态 → 存储</li>
+<li>TrajectoryReplay 是”执行侧”：存储 → 系统状态</li>
+<li>虽然执行特性不同，但都属于”教学与轨迹管理”这一语义范畴</li>
+</ul>
+<hr>
+<p>下表总结了四类控制器在交互语义、消息依赖和生命周期特征上的差异。</p>
+<h2 id="四类控制器对比表"><a href="#四类控制器对比表" class="headerlink" title="四类控制器对比表"></a>四类控制器对比表</h2><table>
+<thead>
+<tr>
+<th>维度</th>
+<th>速度指令控制</th>
+<th>轨迹规划执行</th>
+<th>教学与轨迹管理</th>
+<th>状态驱动执行</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>具体例子</strong></td>
+<td>JointVelocity、CartesianVelocity</td>
+<td>MoveJ、MoveL、MoveC</td>
+<td>PointRecord（采集）、TrajectoryReplay（复现）</td>
+<td>ROS2ActionControl、Move2Initial</td>
+</tr>
+<tr>
+<td><strong>消息类型</strong></td>
+<td>多种：JointState、TwistStamped等</td>
+<td>多种：JointState、Pose等</td>
+<td>固定：String</td>
+<td>无特定消息</td>
+</tr>
+<tr>
+<td><strong>交互语义</strong></td>
+<td>接收速度指令，直接发给电机</td>
+<td>接收目标位置，规划后执行</td>
+<td>接收String（点名字或轨迹名字）<br/>采集：采集当前位置<br/>复现：加载并执行轨迹</td>
+<td>进入模式就执行或等待服务请求</td>
+</tr>
+<tr>
+<td><strong>状态管理</strong></td>
+<td>即时驱动（速度模式）</td>
+<td>批量驱动（位置模式）</td>
+<td>采集：只读 &#x2F; 复现：修改</td>
+<td>状态&#x2F;服务驱动</td>
+</tr>
+<tr>
+<td><strong>hook_state需求</strong></td>
+<td>✅ 必需</td>
+<td>✅ 必需</td>
+<td>采集：❎ 不需要<br/>复现：✅ 必需</td>
+<td>✅ 可选</td>
+</tr>
+<tr>
+<td><strong>继承关系</strong></td>
+<td>VelocityControllerImpl&lt;T&gt;</td>
+<td>TrajectoryControllerImpl&lt;T&gt;</td>
+<td>TeachControllerBase</td>
+<td>UtilityControllerBase</td>
+</tr>
+</tbody></table>
+<hr>
+<p><a id="3-单基类方案的局限性"></a></p>
+<h2 id="3-单基类方案的局限性"><a href="#3-单基类方案的局限性" class="headerlink" title="3. 单基类方案的局限性"></a>3. 单基类方案的局限性</h2><p>从实现角度看，很多团队一开始会尝试用一个 <code>ModeControllerBase</code> 来统一所有控制器类型。然而，这种方式在工程实践中问题重重。具体而言，会遇到以下几类挑战：</p>
+<h3 id="问题1：消息类型混淆和代码重复"><a href="#问题1：消息类型混淆和代码重复" class="headerlink" title="问题1：消息类型混淆和代码重复"></a>问题1：消息类型混淆和代码重复</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 不好的设计：所有控制器都继承同一个基类处理不同类型的消息</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ModeControllerBase</span> &#123;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">handle_message</span><span class="params">(std::any msg)</span> </span>= <span class="number">0</span>;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 例1：两个速度控制器处理不同的消息类型</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">JointVelocityController</span> : <span class="keyword">public</span> ModeControllerBase &#123;</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">handle_message</span><span class="params">(std::any msg)</span> <span class="keyword">override</span> </span>&#123;</span><br><span class="line">        <span class="keyword">auto</span> vel = std::<span class="built_in">any_cast</span>&lt;JointState::SharedPtr&gt;(msg);</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CartesianVelocityController</span> : <span class="keyword">public</span> ModeControllerBase &#123;</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">handle_message</span><span class="params">(std::any msg)</span> <span class="keyword">override</span> </span>&#123;</span><br><span class="line">        <span class="keyword">auto</span> twist = std::<span class="built_in">any_cast</span>&lt;TwistStamped::SharedPtr&gt;(msg);  <span class="comment">// 不同的消息类型！</span></span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 例2：两个轨迹控制器也处理不同的消息类型</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MoveJController</span> : <span class="keyword">public</span> ModeControllerBase &#123;</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">handle_message</span><span class="params">(std::any msg)</span> <span class="keyword">override</span> </span>&#123;</span><br><span class="line">        <span class="keyword">auto</span> target = std::<span class="built_in">any_cast</span>&lt;JointState::SharedPtr&gt;(msg);</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MoveLController</span> : <span class="keyword">public</span> ModeControllerBase &#123;</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">handle_message</span><span class="params">(std::any msg)</span> <span class="keyword">override</span> </span>&#123;</span><br><span class="line">        <span class="keyword">auto</span> target = std::<span class="built_in">any_cast</span>&lt;Pose::SharedPtr&gt;(msg);  <span class="comment">// 又是不同的消息类型！</span></span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p><strong>问题</strong>：</p>
+<ul>
+<li><strong>代码重复</strong>：每个控制器都要写相同的 std::any_cast 和错误处理逻辑</li>
+<li><strong>容易遗漏错误处理</strong>：手动cast时容易忘记异常处理</li>
+<li><strong>编译期无类型检查</strong>：类型错误直到运行时才能发现</li>
+<li><strong>维护困难</strong>：添加新控制器（如MoveC）都要重复这个模式</li>
+</ul>
+<h3 id="问题2：控制交互模式的混杂"><a href="#问题2：控制交互模式的混杂" class="headerlink" title="问题2：控制交互模式的混杂"></a>问题2：控制交互模式的混杂</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 问题：基类要同时支持四种完全不同的控制交互模式</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ModeControllerBase</span> &#123;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">handle_message</span><span class="params">(std::any msg)</span> </span>= <span class="number">0</span>;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 速度指令控制（VelocityControllerBase）</span></span><br><span class="line"><span class="comment">// -&gt; 接收速度指令，立即执行</span></span><br><span class="line"><span class="comment">// -&gt; 需要监控安全状态、是否超出限位等，需要 hook_state</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 轨迹规划执行（TrajectoryControllerBase）</span></span><br><span class="line"><span class="comment">// -&gt; 接收目标位置，规划后执行</span></span><br><span class="line"><span class="comment">// -&gt; 需要规划和监控，需要 hook_state</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 示教采集（TeachControllerBase）</span></span><br><span class="line"><span class="comment">// -&gt; 采集机械臂状态</span></span><br><span class="line"><span class="comment">// -&gt; 记录轨迹不需要 hook_state， 回放轨迹需要 hook_state</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 状态驱动执行（UtilityControllerBase）</span></span><br><span class="line"><span class="comment">// -&gt; 进入模式就执行预定义动作</span></span><br><span class="line"><span class="comment">// -&gt; 无需特定消息驱动，hook_state 可选</span></span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p><strong>问题</strong>：</p>
+<ul>
+<li><strong>无法统一设计</strong>：这四种模式的生命周期、需求完全不同，基类无法为所有模式定义有意义的接口</li>
+<li><strong>子类实现混乱</strong>：子类要适配四种不同的交互模式，代码逻辑复杂且容易出错</li>
+<li><strong>耦合过高</strong>：基类因为要支持所有模式而变得臃肿，改动一个模式可能影响其他模式</li>
+</ul>
+<h3 id="问题3：新增控制器的困难"><a href="#问题3：新增控制器的困难" class="headerlink" title="问题3：新增控制器的困难"></a>问题3：新增控制器的困难</h3><p>假设未来需要同时添加两个新的控制器：</p>
+<ul>
+<li><strong>MyControllerA</strong>:（同属速度指令控制模式）</li>
+<li><strong>MyControllerB</strong>:（同属轨迹规划执行模式）</li>
+</ul>
+<p>在单基类设计中，这两个新控制器都要：</p>
+<ol>
+<li>手动实现 std::any_cast 逻辑</li>
+<li>手动处理异常</li>
+<li>而且无法复用已有控制器的共同逻辑</li>
+</ol>
+<p><strong>问题</strong>：</p>
+<ul>
+<li>无法复用相同模式的共同逻辑（两个速度控制器都要重复cast逻辑）</li>
+<li>新增第五、六个控制器时问题更严重</li>
+<li>系统越来越复杂，越来越难维护</li>
+</ul>
+<p><strong>本质反思</strong>：单基类方案的问题不在于继承结构本身，而在于它试图用一个抽象去覆盖多个语义互斥的控制模式。当架构的基础层需要同时容纳”速度驱动”、”位置规划”、”采集存储”、”状态机驱动”等完全不同的语义时，这个基类就必然成为一个”黑箱”，子类的职责边界也会变得模糊。</p>
+<hr>
+<p><a id="4-分层继承的架构依据"></a></p>
+<h2 id="4-分层继承的架构依据"><a href="#4-分层继承的架构依据" class="headerlink" title="4. 分层继承的架构依据"></a>4. 分层继承的架构依据</h2><p>如果我们将控制器体系重新按照”交互模式”划分，而不是按照功能或名称划分，继承关系会变得自然且稳定。</p>
+<p>核心思想是：<strong>不同的控制交互模式 → 需要不同的第二层基类来建立语义边界</strong></p>
+<p>分层继承的意义并不是为了减少重复代码，而是为了让<strong>类型系统</strong>表达<strong>控制语义</strong>的差异。当每一种控制交互模式都有自己的抽象层时，类型系统本身就成为架构的安全约束。</p>
+<h3 id="第一层：ModeControllerBase（基础框架）"><a href="#第一层：ModeControllerBase（基础框架）" class="headerlink" title="第一层：ModeControllerBase（基础框架）"></a>第一层：ModeControllerBase（基础框架）</h3><p>所有控制器的统一入口。定义公共接口：<code>start()</code>、<code>stop()</code>、<code>handle_message()</code>、<code>needs_hook_state()</code>。</p>
+<h3 id="第二层：按控制交互模式分化"><a href="#第二层：按控制交互模式分化" class="headerlink" title="第二层：按控制交互模式分化"></a>第二层：按控制交互模式分化</h3><p>第二层基类的划分，不仅是一种代码组织手段，更是一种语义建模策略。它让”类型系统”成为架构的第一层约束，使得每个控制器的交互语义在编译期就得到了刻画和保护。</p>
+<p>根据控制交互模式的本质差异，分为两个分支：</p>
+<p><strong>分支 A：消息驱动型控制器</strong></p>
+<ul>
+<li><p><strong>VelocityControllerBase</strong> &#x2F; <strong>VelocityControllerImpl&lt;T&gt;</strong> — 速度指令控制</p>
+<ul>
+<li>接收多种速度消息类型（通过模板参数T）</li>
+<li>内部自动完成消息类型转换和错误处理</li>
+<li>子类只需实现 <code>velocity_callback(const T::SharedPtr msg)</code> 核心逻辑</li>
+</ul>
+</li>
+<li><p><strong>TrajectoryControllerBase</strong> &#x2F; <strong>TrajectoryControllerImpl&lt;T&gt;</strong> — 轨迹规划执行</p>
+<ul>
+<li>接收多种目标消息类型（通过模板参数T）</li>
+<li>内部自动完成消息类型转换和错误处理</li>
+<li>子类只需实现 <code>plan_and_execute()</code> 核心逻辑</li>
+</ul>
+</li>
+<li><p><strong>TeachControllerBase</strong> — 示教&#x2F;记录</p>
+<ul>
+<li>固定接收 <code>std_msgs::msg::String</code> 消息</li>
+<li>子类只需实现 <code>record_callback()</code> 核心逻辑</li>
+<li>默认不需要 hook_state</li>
+</ul>
+</li>
+</ul>
+<p><strong>分支 B：非消息驱动型控制器</strong></p>
+<ul>
+<li><strong>UtilityControllerBase</strong> — 状态驱动执行<ul>
+<li>不依赖特定消息，而是通过内部状态机或外部服务驱动</li>
+<li>子类只需实现 <code>start()</code> 和 <code>stop()</code> 逻辑</li>
+<li>hook_state 需求由具体实现决定</li>
+</ul>
+</li>
+</ul>
+<h3 id="SOLID原则对应"><a href="#SOLID原则对应" class="headerlink" title="SOLID原则对应"></a>SOLID原则对应</h3><p><strong>单一职责</strong>：</p>
+<ul>
+<li>VelocityControllerBase 只处理速度指令消息</li>
+<li>TrajectoryControllerBase 只处理轨迹规划和执行消息</li>
+<li>TeachControllerBase 只处理教学与轨迹管理（包含采集与复现两个方向）</li>
+<li>UtilityControllerBase 只执行预定义的动作或服务</li>
+</ul>
+<p><strong>开闭原则</strong>：</p>
+<ul>
+<li>添加新的第二层基类（如 MyNewControllerBase）不修改现有代码</li>
+<li>现有控制器无需改动</li>
+</ul>
+<p><strong>里氏替换</strong>：</p>
+<ul>
+<li>每个第二层基类仍然满足 ModeControllerBase 的接口契约</li>
+<li>可以在任何期望 ModeControllerBase 的地方使用</li>
+</ul>
+<hr>
+<p><a id="5-总结与设计启示"></a></p>
+<h2 id="5-总结与设计启示"><a href="#5-总结与设计启示" class="headerlink" title="5. 总结与设计启示"></a>5. 总结与设计启示</h2><p>分层继承不是为了减少代码，而是为了在类型系统中显式刻画控制语义的差异。当控制交互模式成为架构的设计维度时，继承层次就自然稳定，系统的演化也更有秩序。</p>
+<p>通过对比四类不同的控制器，我们看到：</p>
+<ul>
+<li><strong>VelocityControllerBase</strong> — 速度指令控制：接收多种速度消息，直接驱动执行</li>
+<li><strong>TrajectoryControllerBase</strong> — 轨迹规划执行：接收多种目标消息，规划后插值执行</li>
+<li><strong>TeachControllerBase</strong> — 教学与轨迹管理：固定String消息驱动<ul>
+<li><strong>采集侧</strong>（PointRecordController）：只读采集机械臂状态</li>
+<li><strong>复现侧</strong>（TrajectoryReplayController）：执行存储的轨迹</li>
+</ul>
+</li>
+<li><strong>UtilityControllerBase</strong> — 状态驱动执行：不依赖特定消息，由状态机或服务驱动</li>
+</ul>
+<p>每一个分层都对应一种<strong>本质不同的控制交互模式</strong>。值得注意的是，TeachControllerBase 下虽然包含采集和复现两个操作，但它们都共享”通过String消息确定操作目标”这一统一的交互语义，因此保持在同一基类下是合理的。</p>
+<p><strong>优秀的架构从不追求最少的类，而追求最清晰的语义边界。</strong> 当系统的类型结构与语义结构对齐时，代码的组织、维护和扩展就变得自然而然。</p>
+<h2 id="下篇预告"><a href="#下篇预告" class="headerlink" title="下篇预告"></a>下篇预告</h2><p>现在你已经理解了<strong>为什么</strong>需要分层继承设计。如果你想了解<strong>如何</strong>在代码中实现这个四层体系，以及各层的核心设计决策，请继续阅读：</p>
+<p><a href="/2025/11/06/%E6%8E%A7%E5%88%B6%E5%99%A8%E4%BD%93%E7%B3%BB%E7%9A%84%E6%BC%94%E8%BF%9B%EF%BC%88%E4%B8%AD%E7%AF%87%EF%BC%89%EF%BC%9A%E5%9B%9B%E5%B1%82%E7%BB%A7%E6%89%BF%E4%BD%93%E7%B3%BB%E7%9A%84%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%86%B3%E7%AD%96/">控制器体系的演进（中篇）：四层继承体系的设计与决策</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer"><div class="post-widgets">
+      <div id="needsharebutton-postbottom">
+        <span class="btn">
+          <i class="fa fa-share-alt" aria-hidden="true"></i>
+        </span>
+      </div>
+    </div>
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>Ding Kaiyue
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="http://ding-kaiyue.github.io/2025/11/06/%E6%8E%A7%E5%88%B6%E5%99%A8%E4%BD%93%E7%B3%BB%E7%9A%84%E6%BC%94%E8%BF%9B%EF%BC%88%E4%B8%8A%E7%AF%87%EF%BC%89%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E5%88%86%E5%B1%82%E7%BB%A7%E6%89%BF/" title="控制器体系的演进（上篇）：为什么需要分层继承">http://ding-kaiyue.github.io/2025/11/06/控制器体系的演进（上篇）：为什么需要分层继承/</a>
+  </li>
+  <li class="post-copyright-license">
+      <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="followme">
+  <span>联系方式</span>
+
+  <div class="social-list">
+
+      <div class="social-item">
+          <span class="social-link">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">WeChat</span>
+          </span>
+
+          <img class="social-item-img" src="/images/wechat_channel.jpg">
+      </div>
+
+      <div class="social-item">
+          <span class="social-link">
+            <span class="icon">
+              <i class="fab fa-qq"></i>
+            </span>
+
+            <span class="label">QQ</span>
+          </span>
+
+          <img class="social-item-img" src="/images/qq_channel.jpg">
+      </div>
+  </div>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/C/" rel="tag"><i class="fa fa-tag"></i> C++</a>
+              <a href="/tags/ROS2/" rel="tag"><i class="fa fa-tag"></i> ROS2</a>
+              <a href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" rel="tag"><i class="fa fa-tag"></i> 设计模式</a>
+              <a href="/tags/%E6%8E%A7%E5%88%B6%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/" rel="tag"><i class="fa fa-tag"></i> 控制系统架构</a>
+              <a href="/tags/%E7%BB%A7%E6%89%BF%E8%AE%BE%E8%AE%A1/" rel="tag"><i class="fa fa-tag"></i> 继承设计</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/11/01/%E4%BB%8E%E7%A1%AC%E7%BC%96%E7%A0%81%E5%88%B0%E6%8F%92%E4%BB%B6%E5%8C%96%EF%BC%88%E4%B8%8B%E7%AF%87%EF%BC%89%EF%BC%9A%E6%B8%85%E6%B4%81%E6%9E%B6%E6%9E%84%E7%9A%84%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/" rel="prev" title="从硬编码到插件化（下篇）：清洁架构的设计与实现">
+                  <i class="fa fa-angle-left"></i> 从硬编码到插件化（下篇）：清洁架构的设计与实现
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2025/11/06/%E6%8E%A7%E5%88%B6%E5%99%A8%E4%BD%93%E7%B3%BB%E7%9A%84%E6%BC%94%E8%BF%9B%EF%BC%88%E4%B8%AD%E7%AF%87%EF%BC%89%EF%BC%9A%E5%9B%9B%E5%B1%82%E7%BB%A7%E6%89%BF%E4%BD%93%E7%B3%BB%E7%9A%84%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%86%B3%E7%AD%96/" rel="next" title="控制器体系的演进（中篇）：四层继承体系的设计与决策">
+                  控制器体系的演进（中篇）：四层继承体系的设计与决策 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Ding Kaiyue</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/Ding-Kaiyue" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<div id="needsharebutton-float">
+      <span class="btn">
+        <i class="fa fa-share-alt" aria-hidden="true"></i>
+      </span>
+    </div>
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-needmoreshare2@1/needsharebutton.min.js"></script>
+  <script>
+      pbOptions = {};
+        pbOptions.iconStyle = "default";
+        pbOptions.boxForm = "horizontal";
+        pbOptions.position = "bottomCenter";
+        pbOptions.networks = "Weibo,Wechat,QQZone,Twitter,Facebook";
+      new needShareButton('#needsharebutton-postbottom', pbOptions);
+      flOptions = {};
+        flOptions.iconStyle = "box";
+        flOptions.boxForm = "horizontal";
+        flOptions.position = "middleRight";
+        flOptions.networks = "Weibo,Wechat,QQZone,Twitter,Facebook";
+      new needShareButton('#needsharebutton-float', flOptions);
+  </script><script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"Ding-Kaiyue/Ding-Kaiyue.github.io","issue_term":"pathname","label":"Comment","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+    <canvas class="fireworks" style="position: fixed;left: 0;top: 0;z-index: 1; pointer-events: none;"></canvas>
+    <script type="text/javascript" src="//cdn.bootcss.com/animejs/2.2.0/anime.min.js"></script>
+    <script type="text/javascript" src="/js/fireworks.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"debug":false,"model":{"jsonPath":"/live2dw/assets/wanko.model.json"},"display":{"position":"right","width":200,"height":450,"hOffset":10,"vOffset":150},"mobile":{"show":false},"log":false});</script></body>
+</html>

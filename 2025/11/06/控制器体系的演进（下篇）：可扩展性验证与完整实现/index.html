@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.0.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/placeholder.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Exo:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Fira+Code:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/blue/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous" defer></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"ding-kaiyue.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.25.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"github","dark":"github-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"default"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":true,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":false,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.json","localsearch":{"enable":true,"top_n_per_article":3,"unescape":false,"preload":false}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="本文通过ForceControllerBase验证开闭原则，提供四层继承体系的完整实现代码，展示Multi-Mapping机制如何支持多机械臂的隔离控制。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="控制器体系的演进（下篇）：分层集成的代码设计与扩展">
+<meta property="og:url" content="http://ding-kaiyue.github.io/2025/11/06/%E6%8E%A7%E5%88%B6%E5%99%A8%E4%BD%93%E7%B3%BB%E7%9A%84%E6%BC%94%E8%BF%9B%EF%BC%88%E4%B8%8B%E7%AF%87%EF%BC%89%EF%BC%9A%E5%8F%AF%E6%89%A9%E5%B1%95%E6%80%A7%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%AE%8C%E6%95%B4%E5%AE%9E%E7%8E%B0/index.html">
+<meta property="og:site_name" content="Ding Kaiyue&#39;s Blog">
+<meta property="og:description" content="本文通过ForceControllerBase验证开闭原则，提供四层继承体系的完整实现代码，展示Multi-Mapping机制如何支持多机械臂的隔离控制。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-11-06T08:48:00.000Z">
+<meta property="article:modified_time" content="2025-11-06T09:23:30.398Z">
+<meta property="article:author" content="Ding Kaiyue">
+<meta property="article:tag" content="C++">
+<meta property="article:tag" content="ROS2">
+<meta property="article:tag" content="代码实现">
+<meta property="article:tag" content="控制系统架构">
+<meta property="article:tag" content="设计模式">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://ding-kaiyue.github.io/2025/11/06/%E6%8E%A7%E5%88%B6%E5%99%A8%E4%BD%93%E7%B3%BB%E7%9A%84%E6%BC%94%E8%BF%9B%EF%BC%88%E4%B8%8B%E7%AF%87%EF%BC%89%EF%BC%9A%E5%8F%AF%E6%89%A9%E5%B1%95%E6%80%A7%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%AE%8C%E6%95%B4%E5%AE%9E%E7%8E%B0/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://ding-kaiyue.github.io/2025/11/06/%E6%8E%A7%E5%88%B6%E5%99%A8%E4%BD%93%E7%B3%BB%E7%9A%84%E6%BC%94%E8%BF%9B%EF%BC%88%E4%B8%8B%E7%AF%87%EF%BC%89%EF%BC%9A%E5%8F%AF%E6%89%A9%E5%B1%95%E6%80%A7%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%AE%8C%E6%95%B4%E5%AE%9E%E7%8E%B0/","path":"2025/11/06/控制器体系的演进（下篇）：可扩展性验证与完整实现/","title":"控制器体系的演进（下篇）：分层集成的代码设计与扩展"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>控制器体系的演进（下篇）：分层集成的代码设计与扩展 | Ding Kaiyue's Blog</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="https://cdnjs.cloudflare.com/ajax/libs/ribbon.js/1.0.2/ribbon.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.1.0/medium-zoom.min.js" integrity="sha256-ZgMyDAIYDYGxbcpJcfUnYwNevG/xi9OHKaR/8GK+jWc=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pangu/7.2.0/pangu.umd.js" integrity="sha256-JnmRRnJK7DC6RQJbAJb6AXOM9OmWzS6z8eYultk/48Y=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script><script src="/js/pjax.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+  <script src="/js/third-party/pace.js" defer></script>
+
+
+  
+
+
+
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/gh/theme-next/theme-next-needmoreshare2@1/needsharebutton.min.css"><style>
+#needsharebutton-postbottom {
+  cursor: pointer;
+  height: 26px;
+  margin-top: 10px;
+  position: relative;
+}
+#needsharebutton-postbottom .btn {
+  border: 1px solid $btn-default-border-color;
+  border-radius: 3px;
+  display: initial;
+  padding: 1px 4px;
+}
+</style><style>
+#needsharebutton-float {
+  bottom: 88px;
+  cursor: pointer;
+  left: -8px;
+  position: fixed;
+  z-index: 9999;
+}
+#needsharebutton-float .btn {
+  border: 1px solid $btn-default-border-color;
+  border-radius: 4px;
+  padding: 0 10px 0 14px;
+}
+</style>
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="Ding Kaiyue's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Ding Kaiyue's Blog</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">不要注满一桶水，而要点燃一把火</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%AC%E7%AF%87%E5%86%85%E5%AE%B9"><span class="nav-number">1.</span> <span class="nav-text">本篇内容</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E5%8F%AF%E6%89%A9%E5%B1%95%E6%80%A7%E9%AA%8C%E8%AF%81%EF%BC%9AForceController%E7%9A%84%E6%97%A0%E7%BC%9D%E6%8E%A5%E5%85%A5"><span class="nav-number">2.</span> <span class="nav-text">1. 可扩展性验证：ForceController的无缝接入</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-%E8%AE%BE%E8%AE%A1%E9%9C%80%E6%B1%82%E4%B8%8E%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.1.</span> <span class="nav-text">1.1 设计需求与实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E5%AE%8C%E6%95%B4%E5%AE%9E%E7%8E%B0%EF%BC%9A%E4%BB%8E%E6%8A%BD%E8%B1%A1%E5%88%B0%E5%85%B7%E4%BD%93%E6%8E%A7%E5%88%B6%E5%99%A8"><span class="nav-number">3.</span> <span class="nav-text">2. 完整实现：从抽象到具体控制器</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E7%AC%AC%E4%B8%89%E5%B1%82%EF%BC%9AVelocityControllerImpl-%E7%9A%84%E5%AE%8C%E6%95%B4%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.1.</span> <span class="nav-text">2.1 第三层：VelocityControllerImpl&lt;T&gt; 的完整实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E7%AC%AC%E4%B8%89%E5%B1%82%EF%BC%9ATrajectoryControllerImpl-%E7%9A%84%E5%AE%8C%E6%95%B4%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.2.</span> <span class="nav-text">2.2 第三层：TrajectoryControllerImpl&lt;T&gt; 的完整实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-%E7%AC%AC%E4%BA%8C%E5%B1%82%EF%BC%9ATeachControllerBase-%E7%9A%84%E5%AE%8C%E6%95%B4%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.3.</span> <span class="nav-text">2.3 第二层：TeachControllerBase 的完整实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-4-%E7%AC%AC%E5%9B%9B%E5%B1%82%EF%BC%9AJointVelocityController-%E7%9A%84%E5%AE%8C%E6%95%B4%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.4.</span> <span class="nav-text">2.4 第四层：JointVelocityController 的完整实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-5-%E7%AC%AC%E5%9B%9B%E5%B1%82%EF%BC%9AMoveJController-%E7%9A%84%E5%AE%8C%E6%95%B4%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.5.</span> <span class="nav-text">2.5 第四层：MoveJController 的完整实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-Multi-Mapping%E6%9C%BA%E5%88%B6%EF%BC%9APer-mapping%E7%9A%84%E6%B6%88%E6%81%AF%E9%9A%94%E7%A6%BB"><span class="nav-number">4.</span> <span class="nav-text">3. Multi-Mapping机制：Per-mapping的消息隔离</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E6%80%BB%E7%BB%93%E4%B8%8E%E5%90%AF%E7%A4%BA"><span class="nav-number">5.</span> <span class="nav-text">4. 总结与启示</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E8%AE%A1%E5%8E%9F%E5%88%99"><span class="nav-number">5.1.</span> <span class="nav-text">设计原则</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E8%A6%81%E7%82%B9%E5%9B%9E%E9%A1%BE"><span class="nav-number">5.2.</span> <span class="nav-text">核心要点回顾</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BC%98%E5%8A%BF%E6%80%BB%E7%BB%93"><span class="nav-number">5.3.</span> <span class="nav-text">优势总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%AC%E8%B4%A8%E5%8F%8D%E6%80%9D"><span class="nav-number">6.</span> <span class="nav-text">本质反思</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Ding Kaiyue"
+      src="/images/header.jpeg">
+  <p class="site-author-name" itemprop="name">Ding Kaiyue</p>
+  <div class="site-description" itemprop="description">分享技术、生活和想法</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">5</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Ding-Kaiyue" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Ding-Kaiyue" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:dingkaiyue61@gmail.com" title="E-Mail → mailto:dingkaiyue61@gmail.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></a>
+  </div>
+
+        </div>
+      </div>
+        <div class="back-to-top animated" role="button" aria-label="返回顶部">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+
+    
+        <div class="pjax">
+        </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://ding-kaiyue.github.io/2025/11/06/%E6%8E%A7%E5%88%B6%E5%99%A8%E4%BD%93%E7%B3%BB%E7%9A%84%E6%BC%94%E8%BF%9B%EF%BC%88%E4%B8%8B%E7%AF%87%EF%BC%89%EF%BC%9A%E5%8F%AF%E6%89%A9%E5%B1%95%E6%80%A7%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%AE%8C%E6%95%B4%E5%AE%9E%E7%8E%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/header.jpeg">
+      <meta itemprop="name" content="Ding Kaiyue">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Ding Kaiyue's Blog">
+      <meta itemprop="description" content="分享技术、生活和想法">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="控制器体系的演进（下篇）：分层集成的代码设计与扩展 | Ding Kaiyue's Blog">
+      <meta itemprop="description" content="本文通过ForceControllerBase验证开闭原则，提供四层继承体系的完整实现代码，展示Multi-Mapping机制如何支持多机械臂的隔离控制。">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          控制器体系的演进（下篇）：分层集成的代码设计与扩展
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2025-11-06 16:48:00 / 修改时间：17:23:30" itemprop="dateCreated datePublished" datetime="2025-11-06T16:48:00+08:00">2025-11-06</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%8E%A7%E5%88%B6%E6%9E%B6%E6%9E%84%E7%AF%87-%E4%BB%8E%E6%A8%A1%E5%BC%8F%E5%88%B0%E5%B7%A5%E5%8E%82/" itemprop="url" rel="index"><span itemprop="name">控制架构篇-从模式到工厂</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>13k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>12 分钟</span>
+    </span>
+</div>
+
+            <div class="post-description">本文通过ForceControllerBase验证开闭原则，提供四层继承体系的完整实现代码，展示Multi-Mapping机制如何支持多机械臂的隔离控制。</div>
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><blockquote>
+<p>接中篇《控制器体系的演进（中篇）：四层继承体系的设计与决策》，本篇重点讲解<strong>如何实现可扩展的架构</strong> — 通过ForceController验证开闭原则、提供完整的代码实现、以及展示Multi-Mapping机制如何支持多机械臂控制。</p>
+</blockquote>
+<p><strong>本文适合</strong>：想要学习可扩展架构设计、需要完整代码实现参考的C++开发者、ROS2系统架构师</p>
+<p><strong>核心观点</strong>：</p>
+<ul>
+<li>四层继承体系满足开闭原则：对扩展开放，对修改关闭</li>
+<li>通过ForceControllerBase的无缝融入验证设计的正确性</li>
+<li>提供从第一层基础接口到第四层具体控制器的完整实现代码</li>
+<li>Multi-Mapping机制通过独立的话题订阅和Lambda闭包实现多机械臂控制</li>
+</ul>
+<hr>
+<h2 id="本篇内容"><a href="#本篇内容" class="headerlink" title="本篇内容"></a>本篇内容</h2><ol>
+<li><strong><a href="#1-%E5%8F%AF%E6%89%A9%E5%B1%95%E6%80%A7%E9%AA%8C%E8%AF%81forcecontroller%E7%9A%84%E6%97%A0%E7%BC%9D%E6%8E%A5%E5%85%A5">可扩展性验证</a></strong></li>
+<li><strong><a href="#2-%E5%AE%8C%E6%95%B4%E5%AE%9E%E7%8E%B0%E4%BB%8E%E6%8A%BD%E8%B1%A1%E5%88%B0%E5%85%B7%E4%BD%93%E6%8E%A7%E5%88%B6%E5%99%A8">完整实现</a></strong></li>
+<li><strong><a href="#3-multi-mapping%E6%9C%BA%E5%88%B6per-mapping%E7%9A%84%E6%B6%88%E6%81%AF%E9%9A%94%E7%A6%BB">Multi-Mapping机制</a></strong></li>
+<li><strong><a href="#4-%E6%80%BB%E7%BB%93%E4%B8%8E%E5%90%AF%E7%A4%BA">总结与启示</a></strong></li>
+</ol>
+<hr>
+<p><a id="1-可扩展性验证forcecontroller的无缝接入"></a></p>
+<h2 id="1-可扩展性验证：ForceController的无缝接入"><a href="#1-可扩展性验证：ForceController的无缝接入" class="headerlink" title="1. 可扩展性验证：ForceController的无缝接入"></a>1. 可扩展性验证：ForceController的无缝接入</h2><p>设计的优劣在于扩展时是否需要修改现有代码。为验证体系的扩展性，本节新增一个第二层基类 <strong>ForceControllerBase</strong>，用于支持力控制模式。</p>
+<h3 id="1-1-设计需求与实现"><a href="#1-1-设计需求与实现" class="headerlink" title="1.1 设计需求与实现"></a>1.1 设计需求与实现</h3><p><strong>需求</strong>：支持力控制模式</p>
+<ul>
+<li>接收力&#x2F;扭矩目标</li>
+<li>内部规划和执行</li>
+<li>与轨迹控制类似，但消息类型是力&#x2F;扭矩数据</li>
+</ul>
+<p><strong>实现</strong>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ForceControllerImpl</span> : <span class="keyword">public</span> ModeControllerBase &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">virtual</span> ~<span class="built_in">ForceControllerImpl</span>() = <span class="keyword">default</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 子类定义力控制的回调</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">force_callback</span><span class="params">(<span class="type">const</span> std::string&amp; mapping,</span></span></span><br><span class="line"><span class="params"><span class="function">                               <span class="type">const</span> <span class="keyword">typename</span> T::SharedPtr msg)</span> </span>= <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建指定mapping的话题订阅</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">create_topic_subscription</span><span class="params">(<span class="type">const</span> std::string&amp; mapping)</span> </span>= <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 执行力控制</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">bool</span> <span class="title">execute_force_control</span><span class="params">(<span class="type">const</span> std::string&amp; mapping,</span></span></span><br><span class="line"><span class="params"><span class="function">                                       <span class="type">const</span> <span class="keyword">typename</span> T::SharedPtr target)</span> </span>= <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 实现基类接口：自动处理类型转换</span></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">handle_message</span><span class="params">(std::any msg)</span> <span class="keyword">final</span> <span class="keyword">override</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">auto</span> typed_msg = std::<span class="built_in">any_cast</span>&lt;<span class="keyword">typename</span> T::SharedPtr&gt;(msg);</span><br><span class="line">            <span class="comment">// mapping通过lambda捕获传递，由create_topic_subscription负责</span></span><br><span class="line">            force_callback(<span class="string">&quot;&quot;</span>, typed_msg);  <span class="comment">// mapping在lambda中已知</span></span><br><span class="line">        &#125; <span class="built_in">catch</span> (<span class="type">const</span> std::bad_any_cast&amp; e) &#123;</span><br><span class="line">            <span class="built_in">RCLCPP_ERROR</span>(<span class="keyword">this</span>-&gt;<span class="built_in">get_logger</span>(), <span class="string">&quot;Force message type mismatch: %s&quot;</span>, e.<span class="built_in">what</span>());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 默认需要hook_state</span></span><br><span class="line">    <span class="function"><span class="type">bool</span> <span class="title">needs_hook_state</span><span class="params">()</span> <span class="type">const</span> <span class="keyword">override</span> </span>&#123; <span class="keyword">return</span> <span class="literal">true</span>; &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function">std::string <span class="title">get_name</span><span class="params">()</span> <span class="type">const</span> <span class="keyword">override</span> </span>= <span class="number">0</span>;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 具体的力控制器示例</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CartesianForceController</span> <span class="keyword">final</span></span><br><span class="line">    : <span class="keyword">public</span> ForceControllerImpl&lt;geometry_msgs::msg::Wrench&gt; &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">start</span><span class="params">(<span class="type">const</span> std::string&amp; mapping)</span> <span class="keyword">override</span> </span>&#123;</span><br><span class="line">        is_active_[mapping] = <span class="literal">true</span>;</span><br><span class="line">        <span class="comment">// 为该mapping创建独立的力控制订阅</span></span><br><span class="line">        <span class="built_in">create_topic_subscription</span>(mapping);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">bool</span> <span class="title">stop</span><span class="params">(<span class="type">const</span> std::string&amp; mapping)</span> <span class="keyword">override</span> </span>&#123;</span><br><span class="line">        is_active_[mapping] = <span class="literal">false</span>;</span><br><span class="line">        <span class="comment">// 停止力控制，回到位置模式</span></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">create_topic_subscription</span><span class="params">(<span class="type">const</span> std::string&amp; mapping)</span> <span class="keyword">override</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 为该mapping创建独立的力控制话题</span></span><br><span class="line">        <span class="keyword">auto</span> subscription = node_-&gt;<span class="built_in">create_subscription</span>&lt;geometry_msgs::msg::Wrench&gt;(</span><br><span class="line">            <span class="string">&quot;/controller_api/force_control/&quot;</span> + mapping,  <span class="comment">// Per-mapping topic</span></span><br><span class="line">            <span class="number">10</span>,</span><br><span class="line">            [<span class="keyword">this</span>, mapping](<span class="type">const</span> geometry_msgs::msg::Wrench::SharedPtr msg) &#123;</span><br><span class="line">                <span class="comment">// Lambda捕获mapping，直接传递给force_callback</span></span><br><span class="line">                force_callback(mapping, msg);</span><br><span class="line">            &#125;);</span><br><span class="line"></span><br><span class="line">        subscriptions_[mapping] = subscription;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">force_callback</span><span class="params">(<span class="type">const</span> std::string&amp; mapping,</span></span></span><br><span class="line"><span class="params"><span class="function">                       <span class="type">const</span> geometry_msgs::msg::Wrench::SharedPtr msg)</span> <span class="keyword">override</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (is_active_.<span class="built_in">find</span>(mapping) == is_active_.<span class="built_in">end</span>() || !is_active_[mapping]) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 处理力/扭矩指令，mapping已在lambda中捕获，无需额外跟踪</span></span><br><span class="line">        <span class="keyword">auto</span> force = Eigen::<span class="built_in">Vector3d</span>(msg-&gt;force.x, msg-&gt;force.y, msg-&gt;force.z);</span><br><span class="line">        <span class="keyword">auto</span> torque = Eigen::<span class="built_in">Vector3d</span>(msg-&gt;torque.x, msg-&gt;torque.y, msg-&gt;torque.z);</span><br><span class="line"></span><br><span class="line">        <span class="built_in">execute_force_control</span>(mapping, msg);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">bool</span> <span class="title">execute_force_control</span><span class="params">(<span class="type">const</span> std::string&amp; mapping,</span></span></span><br><span class="line"><span class="params"><span class="function">                              <span class="type">const</span> geometry_msgs::msg::Wrench::SharedPtr target)</span> <span class="keyword">override</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 实现力控制逻辑</span></span><br><span class="line">        <span class="comment">// 例如：配置力控制参数、调用力控制求解器等</span></span><br><span class="line">        <span class="comment">// 使用mapping来获取该臂的力控制器、传感器等</span></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">enter_hook_state</span><span class="params">(<span class="type">const</span> std::string&amp; mapping)</span> <span class="keyword">override</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 切换到位置模式，停止力控制</span></span><br><span class="line">        <span class="comment">// 发送0力/扭矩指令</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function">std::string <span class="title">get_name</span><span class="params">()</span> <span class="type">const</span> <span class="keyword">override</span> </span>&#123; <span class="keyword">return</span> <span class="string">&quot;CartesianForceController&quot;</span>; &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="comment">// Per-mapping subscriptions</span></span><br><span class="line">    std::map&lt;std::string, rclcpp::Subscription&lt;geometry_msgs::msg::Wrench&gt;::SharedPtr&gt; subscriptions_;</span><br><span class="line">    std::map&lt;std::string, <span class="type">bool</span>&gt; is_active_;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p><strong>关键改进</strong>：</p>
+<ul>
+<li>✅ 使用 <strong>Lambda闭包捕获</strong> <code>[this, mapping]</code> 在回调中传递mapping</li>
+<li>✅ 每个mapping有 <strong>独立的topic订阅</strong>（<code>/controller_api/force_control/{mapping}</code>）</li>
+<li>✅ 符合实际代码的设计模式</li>
+</ul>
+<p><strong>验证结果</strong>：</p>
+<p>✅ <strong>ForceControllerBase 可以无缝融入体系</strong>，因为：</p>
+<ol>
+<li>仍然继承自 ModeControllerBase，满足基础接口</li>
+<li>使用模板处理多种力控制消息类型</li>
+<li>不需要修改现有的四个第二层基类</li>
+<li>不需要修改 ControllerManagerSection</li>
+</ol>
+<p><strong>这验证了设计的开闭原则</strong>：对扩展开放，对修改关闭。</p>
+<hr>
+<p><a id="2-完整实现从抽象到具体控制器"></a></p>
+<h2 id="2-完整实现：从抽象到具体控制器"><a href="#2-完整实现：从抽象到具体控制器" class="headerlink" title="2. 完整实现：从抽象到具体控制器"></a>2. 完整实现：从抽象到具体控制器</h2><p>验证了可扩展性后，我们提供完整的代码实现，展示从抽象基类到具体控制器的每一步细节。</p>
+<h3 id="2-1-第三层：VelocityControllerImpl-的完整实现"><a href="#2-1-第三层：VelocityControllerImpl-的完整实现" class="headerlink" title="2.1 第三层：VelocityControllerImpl&lt;T&gt; 的完整实现"></a>2.1 第三层：VelocityControllerImpl&lt;T&gt; 的完整实现</h3><p>第三层是模板实现层，其核心职责是完成编译期的类型特化与运行时的消息分发。这部分实现展示了如何通过模板自动处理类型转换，为第四层的具体控制器提供统一入口。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// velocity_controller_base.hpp</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">VelocityControllerImpl</span> : <span class="keyword">public</span> VelocityControllerBase &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">virtual</span> ~<span class="built_in">VelocityControllerImpl</span>() = <span class="keyword">default</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 子类实现具体的速度回调</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">velocity_callback</span><span class="params">(<span class="type">const</span> std::string&amp; mapping,</span></span></span><br><span class="line"><span class="params"><span class="function">                                   <span class="type">const</span> <span class="keyword">typename</span> T::SharedPtr msg)</span> </span>= <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建指定mapping的话题订阅</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">create_topic_subscription</span><span class="params">(<span class="type">const</span> std::string&amp; mapping)</span> </span>= <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 自动处理类型转换</span></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">handle_message</span><span class="params">(std::any msg)</span> <span class="keyword">final</span> <span class="keyword">override</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">auto</span> typed_msg = std::<span class="built_in">any_cast</span>&lt;<span class="keyword">typename</span> T::SharedPtr&gt;(msg);</span><br><span class="line">            <span class="comment">// mapping通过lambda闭包捕获直接传递，见create_topic_subscription的实现</span></span><br><span class="line">            <span class="built_in">velocity_callback</span>(<span class="string">&quot;&quot;</span>, typed_msg);  <span class="comment">// 实际mapping在lambda中传入</span></span><br><span class="line">        &#125; <span class="built_in">catch</span> (<span class="type">const</span> std::bad_any_cast&amp; e) &#123;</span><br><span class="line">            <span class="built_in">RCLCPP_ERROR</span>(<span class="keyword">this</span>-&gt;<span class="built_in">get_logger</span>(), <span class="string">&quot;Velocity message type mismatch: %s&quot;</span>, e.<span class="built_in">what</span>());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">bool</span> <span class="title">needs_hook_state</span><span class="params">()</span> <span class="type">const</span> <span class="keyword">override</span> </span>&#123; <span class="keyword">return</span> <span class="literal">true</span>; &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function">std::string <span class="title">get_name</span><span class="params">()</span> <span class="type">const</span> <span class="keyword">override</span> </span>= <span class="number">0</span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-2-第三层：TrajectoryControllerImpl-的完整实现"><a href="#2-2-第三层：TrajectoryControllerImpl-的完整实现" class="headerlink" title="2.2 第三层：TrajectoryControllerImpl&lt;T&gt; 的完整实现"></a>2.2 第三层：TrajectoryControllerImpl&lt;T&gt; 的完整实现</h3><p>轨迹控制与速度控制的第三层实现遵循相同的模板模式，不同之处在于 <code>plan_and_execute()</code> 方法引入了额外的轨迹规划职责。这展示了如何在模板框架内容纳不同的控制逻辑。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// trajectory_controller_base.hpp</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">TrajectoryControllerImpl</span> : <span class="keyword">public</span> TrajectoryControllerBase &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">virtual</span> ~<span class="built_in">TrajectoryControllerImpl</span>() = <span class="keyword">default</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 子类实现轨迹回调</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">trajectory_callback</span><span class="params">(<span class="type">const</span> std::string&amp; mapping,</span></span></span><br><span class="line"><span class="params"><span class="function">                                     <span class="type">const</span> <span class="keyword">typename</span> T::SharedPtr msg)</span> </span>= <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 子类实现规划和执行</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">bool</span> <span class="title">plan_and_execute</span><span class="params">(<span class="type">const</span> std::string&amp; mapping,</span></span></span><br><span class="line"><span class="params"><span class="function">                                  <span class="type">const</span> <span class="keyword">typename</span> T::SharedPtr target)</span> </span>= <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建指定mapping的话题订阅</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">create_topic_subscription</span><span class="params">(<span class="type">const</span> std::string&amp; mapping)</span> </span>= <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 自动处理类型转换</span></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">handle_message</span><span class="params">(std::any msg)</span> <span class="keyword">final</span> <span class="keyword">override</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">auto</span> typed_msg = std::<span class="built_in">any_cast</span>&lt;<span class="keyword">typename</span> T::SharedPtr&gt;(msg);</span><br><span class="line">            <span class="comment">// mapping通过lambda闭包捕获直接传递，见create_topic_subscription的实现</span></span><br><span class="line">            <span class="built_in">trajectory_callback</span>(<span class="string">&quot;&quot;</span>, typed_msg);  <span class="comment">// 实际mapping在lambda中传入</span></span><br><span class="line">        &#125; <span class="built_in">catch</span> (<span class="type">const</span> std::bad_any_cast&amp; e) &#123;</span><br><span class="line">            <span class="built_in">RCLCPP_ERROR</span>(<span class="keyword">this</span>-&gt;<span class="built_in">get_logger</span>(), <span class="string">&quot;Trajectory message type mismatch: %s&quot;</span>, e.<span class="built_in">what</span>());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">bool</span> <span class="title">needs_hook_state</span><span class="params">()</span> <span class="type">const</span> <span class="keyword">override</span> </span>&#123; <span class="keyword">return</span> <span class="literal">true</span>; &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function">std::string <span class="title">get_name</span><span class="params">()</span> <span class="type">const</span> <span class="keyword">override</span> </span>= <span class="number">0</span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-3-第二层：TeachControllerBase-的完整实现"><a href="#2-3-第二层：TeachControllerBase-的完整实现" class="headerlink" title="2.3 第二层：TeachControllerBase 的完整实现"></a>2.3 第二层：TeachControllerBase 的完整实现</h3><p>记录控制的第二层不需要模板，因为所有记录控制器都使用固定的消息类型。这部分代码演示了当消息类型确定时，如何简化设计避免不必要的复杂性。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// teach_controller_base.hpp</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">TeachControllerBase</span> : <span class="keyword">public</span> ModeControllerBase &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">virtual</span> ~<span class="built_in">TeachControllerBase</span>() = <span class="keyword">default</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 子类实现记录回调</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">record_callback</span><span class="params">(<span class="type">const</span> std_msgs::msg::String::SharedPtr msg)</span> </span>= <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建指定mapping的话题订阅</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">create_topic_subscription</span><span class="params">(<span class="type">const</span> std::string&amp; mapping)</span> </span>= <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 处理String消息</span></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">handle_message</span><span class="params">(std::any msg)</span> <span class="keyword">final</span> <span class="keyword">override</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">auto</span> record_msg = std::<span class="built_in">any_cast</span>&lt;std_msgs::msg::String::SharedPtr&gt;(msg);</span><br><span class="line">            <span class="built_in">record_callback</span>(record_msg);</span><br><span class="line">        &#125; <span class="built_in">catch</span> (<span class="type">const</span> std::bad_any_cast&amp; e) &#123;</span><br><span class="line">            <span class="built_in">RCLCPP_ERROR</span>(<span class="keyword">this</span>-&gt;<span class="built_in">get_logger</span>(), <span class="string">&quot;Record message type mismatch: %s&quot;</span>, e.<span class="built_in">what</span>());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">bool</span> <span class="title">needs_hook_state</span><span class="params">()</span> <span class="type">const</span> <span class="keyword">override</span> </span>&#123; <span class="keyword">return</span> <span class="literal">false</span>; &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">enter_hook_state</span><span class="params">(<span class="type">const</span> std::string&amp; mapping)</span> <span class="keyword">override</span> </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="function">std::string <span class="title">get_name</span><span class="params">()</span> <span class="type">const</span> <span class="keyword">override</span> </span>= <span class="number">0</span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-4-第四层：JointVelocityController-的完整实现"><a href="#2-4-第四层：JointVelocityController-的完整实现" class="headerlink" title="2.4 第四层：JointVelocityController 的完整实现"></a>2.4 第四层：JointVelocityController 的完整实现</h3><p>第四层是具体控制器，直接与硬件交互。JointVelocityController通过继承模板第三层，已经获得编译期的类型保证和映射管理框架，只需关注具体的业务逻辑——如何响应关节速度指令。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// joint_velocity_controller.hpp</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">JointVelocityController</span> :</span><br><span class="line">    <span class="keyword">public</span> VelocityControllerImpl&lt;sensor_msgs::msg::JointState&gt; &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">JointVelocityController</span><span class="params">(<span class="type">const</span> std::shared_ptr&lt;HardwareManager&gt;&amp; hw_manager)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">start</span><span class="params">(<span class="type">const</span> std::string&amp; mapping)</span> <span class="keyword">override</span></span>;</span><br><span class="line">    <span class="function"><span class="type">bool</span> <span class="title">stop</span><span class="params">(<span class="type">const</span> std::string&amp; mapping)</span> <span class="keyword">override</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">velocity_callback</span><span class="params">(<span class="type">const</span> std::string&amp; mapping,</span></span></span><br><span class="line"><span class="params"><span class="function">                          <span class="type">const</span> sensor_msgs::msg::JointState::SharedPtr msg)</span> <span class="keyword">override</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">create_topic_subscription</span><span class="params">(<span class="type">const</span> std::string&amp; mapping)</span> <span class="keyword">override</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">enter_hook_state</span><span class="params">(<span class="type">const</span> std::string&amp; mapping)</span> <span class="keyword">override</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function">std::string <span class="title">get_name</span><span class="params">()</span> <span class="type">const</span> <span class="keyword">override</span> </span>&#123; <span class="keyword">return</span> <span class="string">&quot;JointVelocityController&quot;</span>; &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">send_joint_velocities</span><span class="params">(<span class="type">const</span> std::string&amp; mapping,</span></span></span><br><span class="line"><span class="params"><span class="function">                              <span class="type">const</span> sensor_msgs::msg::JointState::SharedPtr msg)</span></span>;</span><br><span class="line"></span><br><span class="line">    std::shared_ptr&lt;HardwareManager&gt; hardware_manager_;</span><br><span class="line">    std::map&lt;std::string, rclcpp::Subscription&lt;sensor_msgs::msg::JointState&gt;::SharedPtr&gt;</span><br><span class="line">        subscriptions_;</span><br><span class="line">    std::map&lt;std::string, <span class="type">bool</span>&gt; is_active_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// joint_velocity_controller.cpp 实现关键部分</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">JointVelocityController::create_topic_subscription</span><span class="params">(<span class="type">const</span> std::string&amp; mapping)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">auto</span> subscription = node_-&gt;<span class="built_in">create_subscription</span>&lt;sensor_msgs::msg::JointState&gt;(</span><br><span class="line">        <span class="string">&quot;/controller_api/joint_velocity_action/&quot;</span> + mapping,  <span class="comment">// Per-mapping topic</span></span><br><span class="line">        <span class="number">10</span>,</span><br><span class="line">        [<span class="keyword">this</span>, mapping](<span class="type">const</span> sensor_msgs::msg::JointState::SharedPtr msg) &#123;</span><br><span class="line">            <span class="comment">// Lambda闭包捕获mapping，直接传递给回调</span></span><br><span class="line">            <span class="built_in">velocity_callback</span>(mapping, msg);</span><br><span class="line">        &#125;);</span><br><span class="line">    subscriptions_[mapping] = subscription;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">JointVelocityController::velocity_callback</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="type">const</span> std::string&amp; mapping,</span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="type">const</span> sensor_msgs::msg::JointState::SharedPtr msg)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!is_active_[mapping]) <span class="keyword">return</span>;</span><br><span class="line">    <span class="built_in">send_joint_velocities</span>(mapping, msg);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-5-第四层：MoveJController-的完整实现"><a href="#2-5-第四层：MoveJController-的完整实现" class="headerlink" title="2.5 第四层：MoveJController 的完整实现"></a>2.5 第四层：MoveJController 的完整实现</h3><p>MoveJController展示了轨迹控制在第四层的实现。与JointVelocityController不同，它继承自TrajectoryControllerImpl，需要实现轨迹规划和插值执行逻辑，体现了不同控制类型在同一框架内的差异化实现。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// movej_controller.hpp</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MoveJController</span> :</span><br><span class="line">    <span class="keyword">public</span> TrajectoryControllerImpl&lt;sensor_msgs::msg::JointState&gt; &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">MoveJController</span><span class="params">(<span class="type">const</span> std::shared_ptr&lt;TrajectoryManager&gt;&amp; traj_manager)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">start</span><span class="params">(<span class="type">const</span> std::string&amp; mapping)</span> <span class="keyword">override</span></span>;</span><br><span class="line">    <span class="function"><span class="type">bool</span> <span class="title">stop</span><span class="params">(<span class="type">const</span> std::string&amp; mapping)</span> <span class="keyword">override</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">trajectory_callback</span><span class="params">(<span class="type">const</span> std::string&amp; mapping,</span></span></span><br><span class="line"><span class="params"><span class="function">                            <span class="type">const</span> sensor_msgs::msg::JointState::SharedPtr msg)</span> <span class="keyword">override</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">bool</span> <span class="title">plan_and_execute</span><span class="params">(<span class="type">const</span> std::string&amp; mapping,</span></span></span><br><span class="line"><span class="params"><span class="function">                         <span class="type">const</span> sensor_msgs::msg::JointState::SharedPtr target)</span> <span class="keyword">override</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">create_topic_subscription</span><span class="params">(<span class="type">const</span> std::string&amp; mapping)</span> <span class="keyword">override</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">enter_hook_state</span><span class="params">(<span class="type">const</span> std::string&amp; mapping)</span> <span class="keyword">override</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function">std::string <span class="title">get_name</span><span class="params">()</span> <span class="type">const</span> <span class="keyword">override</span> </span>&#123; <span class="keyword">return</span> <span class="string">&quot;MoveJController&quot;</span>; &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    std::shared_ptr&lt;TrajectoryManager&gt; trajectory_manager_;</span><br><span class="line">    std::map&lt;std::string, rclcpp::Subscription&lt;sensor_msgs::msg::JointState&gt;::SharedPtr&gt;</span><br><span class="line">        subscriptions_;</span><br><span class="line">    std::map&lt;std::string, <span class="type">bool</span>&gt; is_executing_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// movej_controller.cpp 实现关键部分</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">MoveJController::create_topic_subscription</span><span class="params">(<span class="type">const</span> std::string&amp; mapping)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">auto</span> subscription = node_-&gt;<span class="built_in">create_subscription</span>&lt;sensor_msgs::msg::JointState&gt;(</span><br><span class="line">        <span class="string">&quot;/controller_api/movej_action/&quot;</span> + mapping,  <span class="comment">// Per-mapping topic</span></span><br><span class="line">        rclcpp::<span class="built_in">QoS</span>(<span class="number">10</span>).<span class="built_in">reliable</span>(),</span><br><span class="line">        [<span class="keyword">this</span>, mapping](<span class="type">const</span> sensor_msgs::msg::JointState::SharedPtr msg) &#123;</span><br><span class="line">            <span class="comment">// Lambda闭包捕获mapping，直接传递给回调</span></span><br><span class="line">            <span class="built_in">trajectory_callback</span>(mapping, msg);</span><br><span class="line">        &#125;);</span><br><span class="line">    subscriptions_[mapping] = subscription;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">MoveJController::plan_and_execute</span><span class="params">(<span class="type">const</span> std::string&amp; mapping, <span class="type">const</span> sensor_msgs::msg::JointState::SharedPtr msg)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 进行轨迹规划</span></span><br><span class="line">    <span class="keyword">auto</span> planning_result = motion_planning_services_[mapping]-&gt;<span class="built_in">planJointMotion</span>(*msg);</span><br><span class="line">    <span class="keyword">if</span> (!planning_result.success) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 转换轨迹格式</span></span><br><span class="line">    <span class="keyword">auto</span> joint_names = hardware_manager_-&gt;<span class="built_in">get_joint_names</span>(mapping);</span><br><span class="line">    trajectory_interpolator::Trajectory interpolator_trajectory =</span><br><span class="line">        arm_controller::utils::TrajectoryConverter::<span class="built_in">convertPlanningToInterpolator</span>(</span><br><span class="line">            planning_result.trajectory, joint_names);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 分析轨迹动力学参数</span></span><br><span class="line">    <span class="keyword">auto</span> dynamics = arm_controller::utils::TrajectoryConverter::<span class="built_in">analyzeTrajectoryDynamics</span>(planning_result.trajectory);</span><br><span class="line">    <span class="keyword">auto</span> safe_params = arm_controller::utils::TrajectoryConverter::<span class="built_in">calculateSafeInterpolationParams</span>(dynamics);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 插值轨迹</span></span><br><span class="line">    trajectory_interpolator::Trajectory final_trajectory = <span class="built_in">interpolate_trajectory</span>(</span><br><span class="line">        interpolator_trajectory,</span><br><span class="line">        safe_params.max_velocity,</span><br><span class="line">        safe_params.max_acceleration,</span><br><span class="line">        safe_params.max_jerk,</span><br><span class="line">        mapping</span><br><span class="line">    );</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 执行轨迹</span></span><br><span class="line">    <span class="built_in">execute_trajectory</span>(final_trajectory, mapping);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<p><a id="3-multi-mapping机制per-mapping的消息隔离"></a></p>
+<h2 id="3-Multi-Mapping机制：Per-mapping的消息隔离"><a href="#3-Multi-Mapping机制：Per-mapping的消息隔离" class="headerlink" title="3. Multi-Mapping机制：Per-mapping的消息隔离"></a>3. Multi-Mapping机制：Per-mapping的消息隔离</h2><p>单个控制器的实现已经完整，但如何支持多个机械臂同时独立控制？Multi-Mapping机制提供了答案。每个控制器为不同的机械臂创建独立的话题订阅，实现per-mapping的隔离。</p>
+<p><strong>关键架构特征</strong>：</p>
+<ul>
+<li><p>✅ <strong>Per-mapping Topic隔离</strong>：每个 mapping 有独立的 topic</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">/controller_api/joint_velocity_action/left_arm</span><br><span class="line">/controller_api/joint_velocity_action/right_arm</span><br><span class="line">/controller_api/movej_action/single_arm</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>✅ <strong>Lambda闭包消息分发</strong>：mapping 在闭包中捕获，直接传递给回调</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[<span class="keyword">this</span>, mapping](<span class="type">const</span> MsgType::SharedPtr msg) &#123;</span><br><span class="line">    <span class="built_in">velocity_callback</span>(mapping, msg);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>✅ <strong>Per-mapping 订阅管理</strong>：每个控制器维护 mapping→subscription 的映射</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">std::map&lt;std::string, rclcpp::Subscription&lt;T&gt;::SharedPtr&gt; subscriptions_;</span><br><span class="line">subscriptions_[mapping] = subscription;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<p>这种设计下，控制器对多机械臂的消息分发逻辑完全由lambda闭包捕获mapping完成，避免了额外的分支或动态注册机制，同时保证了每个mapping的独立隔离。</p>
+<p><strong>关于Mode Tracking（映射模式跟踪）、Hook State Management（钩点状态管理）、完整的七步转移流程等内容，敬请期待。</strong></p>
+<hr>
+<p><a id="4-总结与启示"></a></p>
+<h2 id="4-总结与启示"><a href="#4-总结与启示" class="headerlink" title="4. 总结与启示"></a>4. 总结与启示</h2><h3 id="设计原则"><a href="#设计原则" class="headerlink" title="设计原则"></a>设计原则</h3><table>
+<thead>
+<tr>
+<th>原则</th>
+<th>具体体现</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>单一职责</strong></td>
+<td>每层各司其职，不互相干扰</td>
+</tr>
+<tr>
+<td><strong>开闭原则</strong></td>
+<td>添加ForceControllerBase无需修改现有代码</td>
+</tr>
+<tr>
+<td><strong>里氏替换</strong></td>
+<td>任何第二层基类的子类都可替代ModeControllerBase</td>
+</tr>
+<tr>
+<td><strong>依赖倒置</strong></td>
+<td>依赖抽象，而不是具体实现</td>
+</tr>
+</tbody></table>
+<h3 id="核心要点回顾"><a href="#核心要点回顾" class="headerlink" title="核心要点回顾"></a>核心要点回顾</h3><p><strong>分层设计的四层体系</strong>：</p>
+<ol>
+<li><strong>第一层 ModeControllerBase</strong>：定义基础接口和生命周期</li>
+<li><strong>第二层 VelocityControllerBase&#x2F;TrajectoryControllerBase&#x2F;TeachControllerBase&#x2F;UtilityControllerBase</strong>：按控制交互模式分化，提供模板支持</li>
+<li><strong>第三层 VelocityControllerImpl&lt;T&gt;&#x2F;TrajectoryControllerImpl&lt;T&gt;</strong>：模板实现，提供编译期类型安全</li>
+<li><strong>第四层 JointVelocityController&#x2F;MoveJController&#x2F;…</strong>：具体控制器实现</li>
+</ol>
+<h3 id="优势总结"><a href="#优势总结" class="headerlink" title="优势总结"></a>优势总结</h3><p>✅ <strong>类型安全</strong>：编译期检查消息类型，避免运行时错误</p>
+<p>✅ <strong>代码复用</strong>：模板和多层继承减少重复代码</p>
+<p>✅ <strong>易于扩展</strong>：添加新的第二层基类或新的具体控制器无需修改现有代码</p>
+<p>✅ <strong>支持多臂</strong>：Per-mapping 的模式跟踪和话题隔离使系统支持多个独立的机械臂</p>
+<p>✅ <strong>安全设计</strong>：Hook 状态和模式切换保证系统安全</p>
+<hr>
+<h2 id="本质反思"><a href="#本质反思" class="headerlink" title="本质反思"></a>本质反思</h2><p>分层继承的价值不在于代码行数的减少，而在于让类型系统成为架构的约束机制。当VelocityControllerImpl&lt;T&gt;通过模板确保了编译期类型安全时，运行时错误从”可能发生”变为”不可能发生”——这是静态类型语言的力量，也是优秀架构的特征。</p>
+<p>从单基类到四层继承，从单一机械臂到Multi-Mapping，每一次演进都在回答同一个问题：<strong>如何在复杂性增长时，保持系统的可理解性？</strong> 答案不在工具或技巧，而在分层的清晰性——当每一层的职责边界明确时，复杂性就被局部化了。</p>
+<p><strong>优秀的架构从不追求最少的代码，而追求最清晰的语义边界。</strong> 当类型结构与业务语义对齐时，扩展就变得自然。这就是分层继承的哲学：用抽象的层次，应对现实的复杂。</p>
+<p>这也是本系列的最终落点：让架构成为语义清晰、可验证、可演化的系统语言。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer"><div class="post-widgets">
+      <div id="needsharebutton-postbottom">
+        <span class="btn">
+          <i class="fa fa-share-alt" aria-hidden="true"></i>
+        </span>
+      </div>
+    </div>
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>Ding Kaiyue
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="http://ding-kaiyue.github.io/2025/11/06/%E6%8E%A7%E5%88%B6%E5%99%A8%E4%BD%93%E7%B3%BB%E7%9A%84%E6%BC%94%E8%BF%9B%EF%BC%88%E4%B8%8B%E7%AF%87%EF%BC%89%EF%BC%9A%E5%8F%AF%E6%89%A9%E5%B1%95%E6%80%A7%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%AE%8C%E6%95%B4%E5%AE%9E%E7%8E%B0/" title="控制器体系的演进（下篇）：分层集成的代码设计与扩展">http://ding-kaiyue.github.io/2025/11/06/控制器体系的演进（下篇）：可扩展性验证与完整实现/</a>
+  </li>
+  <li class="post-copyright-license">
+      <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="followme">
+  <span>联系方式</span>
+
+  <div class="social-list">
+
+      <div class="social-item">
+          <span class="social-link">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">WeChat</span>
+          </span>
+
+          <img class="social-item-img" src="/images/wechat_channel.jpg">
+      </div>
+
+      <div class="social-item">
+          <span class="social-link">
+            <span class="icon">
+              <i class="fab fa-qq"></i>
+            </span>
+
+            <span class="label">QQ</span>
+          </span>
+
+          <img class="social-item-img" src="/images/qq_channel.jpg">
+      </div>
+  </div>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/C/" rel="tag"><i class="fa fa-tag"></i> C++</a>
+              <a href="/tags/ROS2/" rel="tag"><i class="fa fa-tag"></i> ROS2</a>
+              <a href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" rel="tag"><i class="fa fa-tag"></i> 设计模式</a>
+              <a href="/tags/%E6%8E%A7%E5%88%B6%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/" rel="tag"><i class="fa fa-tag"></i> 控制系统架构</a>
+              <a href="/tags/%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0/" rel="tag"><i class="fa fa-tag"></i> 代码实现</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/11/06/%E6%8E%A7%E5%88%B6%E5%99%A8%E4%BD%93%E7%B3%BB%E7%9A%84%E6%BC%94%E8%BF%9B%EF%BC%88%E4%B8%AD%E7%AF%87%EF%BC%89%EF%BC%9A%E5%9B%9B%E5%B1%82%E7%BB%A7%E6%89%BF%E4%BD%93%E7%B3%BB%E7%9A%84%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%86%B3%E7%AD%96/" rel="prev" title="控制器体系的演进（中篇）：四层继承体系的设计与决策">
+                  <i class="fa fa-angle-left"></i> 控制器体系的演进（中篇）：四层继承体系的设计与决策
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Ding Kaiyue</span>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/Ding-Kaiyue" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<div id="needsharebutton-float">
+      <span class="btn">
+        <i class="fa fa-share-alt" aria-hidden="true"></i>
+      </span>
+    </div>
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-needmoreshare2@1/needsharebutton.min.js"></script>
+  <script>
+      pbOptions = {};
+        pbOptions.iconStyle = "default";
+        pbOptions.boxForm = "horizontal";
+        pbOptions.position = "bottomCenter";
+        pbOptions.networks = "Weibo,Wechat,QQZone,Twitter,Facebook";
+      new needShareButton('#needsharebutton-postbottom', pbOptions);
+      flOptions = {};
+        flOptions.iconStyle = "box";
+        flOptions.boxForm = "horizontal";
+        flOptions.position = "middleRight";
+        flOptions.networks = "Weibo,Wechat,QQZone,Twitter,Facebook";
+      new needShareButton('#needsharebutton-float', flOptions);
+  </script><script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"Ding-Kaiyue/Ding-Kaiyue.github.io","issue_term":"pathname","label":"Comment","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+    <canvas class="fireworks" style="position: fixed;left: 0;top: 0;z-index: 1; pointer-events: none;"></canvas>
+    <script type="text/javascript" src="//cdn.bootcss.com/animejs/2.2.0/anime.min.js"></script>
+    <script type="text/javascript" src="/js/fireworks.js"></script>
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"debug":false,"model":{"jsonPath":"/live2dw/assets/wanko.model.json"},"display":{"position":"right","width":200,"height":450,"hOffset":10,"vOffset":150},"mobile":{"show":false},"log":false});</script></body>
+</html>
