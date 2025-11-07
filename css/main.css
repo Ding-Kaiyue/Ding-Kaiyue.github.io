@@ -1289,7 +1289,7 @@ pre code {
     vertical-align: middle;
   }
   .links-of-author a::before {
-    background: #85d16b;
+    background: #25526c;
     display: inline-block;
     margin-right: 3px;
     transform: translateY(-2px);
@@ -2790,8 +2790,9 @@ header.header {
 .sidebar {
   background: var(--body-bg-color);
   box-shadow: none;
-  margin-top: 16px;
-  position: static;
+  margin-top: 5%;
+  position: sticky;
+  top: 12px;
   width: $sidebar-desktop;
 }
 @media (max-width: 991px) {
@@ -3003,29 +3004,4 @@ header.header {
   .comments {
     padding: 10px 12px;
   }
-}
-.sidebar {
-  position: fixed !important;
-  overflow: visible !important;
-  overflow-y: visible !important;
-  max-height: 100vh !important;
-  height: auto !important;
-  top: 0 !important;
-}
-.sidebar-inner {
-  overflow: visible !important;
-  overflow-y: visible !important;
-  max-height: unset !important;
-  display: flex;
-  flex-direction: column;
-}
-.post-toc {
-  overflow: visible !important;
-  max-height: unset !important;
-}
-.main {
-  width: 100%;
-}
-.content-wrap {
-  overflow-y: auto;
 }
