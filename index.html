@@ -203,7 +203,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">6</span>
+          <span class="site-state-item-count">7</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -214,7 +214,7 @@
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-count">14</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -257,6 +257,106 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://ding-kaiyue.github.io/2025/11/21/%E7%AC%9B%E5%8D%A1%E5%B0%94%E6%8E%A7%E5%88%B6%E7%9A%84%E5%AE%89%E5%85%A8%E8%AE%BE%E8%AE%A1%EF%BC%88%E4%B8%8B%E7%AF%87%EF%BC%89%EF%BC%9A%E5%9B%9B%E5%A4%A7%E6%A3%80%E9%AA%8C%E6%9C%BA%E5%88%B6%20+%20%E5%AE%B9%E9%94%99%E6%9C%BA%E5%88%B6%E7%9A%84%E5%B7%A5%E7%A8%8B%E5%AE%9E%E7%8E%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/header.jpeg">
+      <meta itemprop="name" content="Ding Kaiyue">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Ding Kaiyue's Blog">
+      <meta itemprop="description" content="分享技术、生活和想法">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | Ding Kaiyue's Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2025/11/21/%E7%AC%9B%E5%8D%A1%E5%B0%94%E6%8E%A7%E5%88%B6%E7%9A%84%E5%AE%89%E5%85%A8%E8%AE%BE%E8%AE%A1%EF%BC%88%E4%B8%8B%E7%AF%87%EF%BC%89%EF%BC%9A%E5%9B%9B%E5%A4%A7%E6%A3%80%E9%AA%8C%E6%9C%BA%E5%88%B6%20+%20%E5%AE%B9%E9%94%99%E6%9C%BA%E5%88%B6%E7%9A%84%E5%B7%A5%E7%A8%8B%E5%AE%9E%E7%8E%B0/" class="post-title-link" itemprop="url">笛卡尔控制的安全设计（下篇）：四大检验机制 + 容错机制的工程实现</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2025-11-21 14:28:00 / 修改时间：14:28:32" itemprop="dateCreated datePublished" datetime="2025-11-21T14:28:00+08:00">2025-11-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%8E%A7%E5%88%B6%E6%9E%B6%E6%9E%84%E7%AF%87-%E4%BB%8E%E6%A8%A1%E5%BC%8F%E5%88%B0%E5%B7%A5%E5%8E%82/" itemprop="url" rel="index"><span itemprop="name">控制架构篇-从模式到工厂</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>7.5k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>7 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>讲解CartesianVelocityController的四大检验机制和Fallback容错机制如何在代码中具体实现，从理论风险到工程防护的完整路径。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2025/11/21/%E7%AC%9B%E5%8D%A1%E5%B0%94%E6%8E%A7%E5%88%B6%E7%9A%84%E5%AE%89%E5%85%A8%E8%AE%BE%E8%AE%A1%EF%BC%88%E4%B8%8B%E7%AF%87%EF%BC%89%EF%BC%9A%E5%9B%9B%E5%A4%A7%E6%A3%80%E9%AA%8C%E6%9C%BA%E5%88%B6%20+%20%E5%AE%B9%E9%94%99%E6%9C%BA%E5%88%B6%E7%9A%84%E5%B7%A5%E7%A8%8B%E5%AE%9E%E7%8E%B0/">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
     <link itemprop="mainEntityOfPage" href="http://ding-kaiyue.github.io/2025/11/20/%E7%AC%9B%E5%8D%A1%E5%B0%94%E6%8E%A7%E5%88%B6%E7%9A%84%E5%AE%89%E5%85%A8%E8%AE%BE%E8%AE%A1%EF%BC%88%E4%B8%8A%E7%AF%87%EF%BC%89%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E7%AC%9B%E5%8D%A1%E5%B0%94%E9%80%9F%E5%BA%A6%E6%8E%A7%E5%88%B6%E5%8D%B1%E9%99%A9%EF%BC%9F%E2%80%94%E2%80%94%E4%BB%8E%E9%97%AE%E9%A2%98%E5%88%B0%E6%9E%B6%E6%9E%84/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -285,9 +385,15 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
-      
 
-      <time title="创建时间：2025-11-20 15:00:00 / 修改时间：18:11:36" itemprop="dateCreated datePublished" datetime="2025-11-20T15:00:00+08:00">2025-11-20</time>
+      <time title="创建时间：2025-11-20 15:00:00" itemprop="dateCreated datePublished" datetime="2025-11-20T15:00:00+08:00">2025-11-20</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-11-21 14:27:57" itemprop="dateModified" datetime="2025-11-21T14:27:57+08:00">2025-11-21</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -305,7 +411,7 @@
         <i class="far fa-file-word"></i>
       </span>
       <span class="post-meta-item-text">本文字数：</span>
-      <span>5.4k</span>
+      <span>5.3k</span>
     </span>
     <span class="post-meta-item" title="阅读时长">
       <span class="post-meta-item-icon">

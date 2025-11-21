@@ -27,16 +27,16 @@
 <meta property="og:site_name" content="Ding Kaiyue&#39;s Blog">
 <meta property="og:description" content="分析笛卡尔速度控制比关节速度更危险的本质原因，从Jacobian特性到工程需求，为多维防护设计奠定理论基础。">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://ding-kaiyue.github.io/images/image.png">
+<meta property="og:image" content="http://ding-kaiyue.github.io/src/arm_controller/docs/diagrams/cartesian_velocity_safety_flow.png">
 <meta property="article:published_time" content="2025-11-20T07:00:00.000Z">
-<meta property="article:modified_time" content="2025-11-20T10:11:36.722Z">
+<meta property="article:modified_time" content="2025-11-21T06:27:57.311Z">
 <meta property="article:author" content="Ding Kaiyue">
 <meta property="article:tag" content="Jacobian分析">
 <meta property="article:tag" content="QP求解">
 <meta property="article:tag" content="机器人安全">
 <meta property="article:tag" content="笛卡尔速度控制">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://ding-kaiyue.github.io/images/image.png">
+<meta name="twitter:image" content="http://ding-kaiyue.github.io/src/arm_controller/docs/diagrams/cartesian_velocity_safety_flow.png">
 
 
 <link rel="canonical" href="http://ding-kaiyue.github.io/2025/11/20/%E7%AC%9B%E5%8D%A1%E5%B0%94%E6%8E%A7%E5%88%B6%E7%9A%84%E5%AE%89%E5%85%A8%E8%AE%BE%E8%AE%A1%EF%BC%88%E4%B8%8A%E7%AF%87%EF%BC%89%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E7%AC%9B%E5%8D%A1%E5%B0%94%E9%80%9F%E5%BA%A6%E6%8E%A7%E5%88%B6%E5%8D%B1%E9%99%A9%EF%BC%9F%E2%80%94%E2%80%94%E4%BB%8E%E9%97%AE%E9%A2%98%E5%88%B0%E6%9E%B6%E6%9E%84/">
@@ -197,7 +197,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%AC%E7%AF%87%E5%86%85%E5%AE%B9"><span class="nav-text">本篇内容</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E9%97%AE%E9%A2%98%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%BC%80%E5%8F%91%E8%80%85%E5%AE%B3%E6%80%95%E7%AC%9B%E5%8D%A1%E5%B0%94%E9%80%9F%E5%BA%A6%E6%8E%A7%E5%88%B6%EF%BC%9F"><span class="nav-text">1. 问题：为什么机器人开发者害怕笛卡尔速度控制？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E6%9C%AC%E8%B4%A8%EF%BC%9AJacobian%E6%98%A0%E5%B0%84%E4%B8%BA%E4%BB%80%E4%B9%88%E5%8D%B1%E9%99%A9%EF%BC%9F"><span class="nav-text">2. 本质：Jacobian映射为什么危险？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E5%A5%87%E5%BC%82%E7%82%B9%EF%BC%9A%E6%9F%90%E4%BA%9B%E6%96%B9%E5%90%91%E6%A0%B9%E6%9C%AC%E6%97%A0%E6%B3%95%E5%88%B0%E8%BE%BE"><span class="nav-text">2.1 奇异点：某些方向根本无法到达</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E6%94%BE%E5%A4%A7%E6%95%88%E5%BA%94%EF%BC%9A%E5%B0%8F%E8%BE%93%E5%85%A5%EF%BC%8C%E5%A4%A7%E8%BE%93%E5%87%BA"><span class="nav-text">2.2 放大效应：小输入，大输出</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-%E5%A4%9A%E8%A7%A3%E4%B8%8E%E6%96%B9%E5%90%91%E4%B8%8D%E4%B8%80%E8%87%B4"><span class="nav-text">2.3 多解与方向不一致</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%AF%B9%E6%AF%94%EF%BC%9A%E5%85%B3%E8%8A%82%E9%80%9F%E5%BA%A6-vs-%E7%AC%9B%E5%8D%A1%E5%B0%94%E9%80%9F%E5%BA%A6%E7%9A%84%E5%AE%89%E5%85%A8%E8%BE%B9%E7%95%8C"><span class="nav-text">3. 对比：关节速度 vs 笛卡尔速度的安全边界</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E5%B7%A5%E7%A8%8B%E7%8E%B0%E5%AE%9E%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E5%8D%95%E4%B8%80%E9%98%B2%E6%8A%A4%E4%B8%8D%E5%A4%9F"><span class="nav-text">4. 工程现实：为什么单一防护不够</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E5%A4%9A%E7%BB%B4%E6%A3%80%E9%AA%8C%E7%BD%91%E7%9A%84%E8%AE%BE%E8%AE%A1%E5%93%B2%E5%AD%A6"><span class="nav-text">5. 多维检验网的设计哲学</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-%E5%9D%90%E6%A0%87%E7%B3%BB%E7%BB%9F%E4%B8%80%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88reference-frame%E5%BF%85%E9%A1%BB%E9%94%81%E5%AE%9A"><span class="nav-text">6. 坐标系统一：为什么reference_frame必须锁定</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-%E6%9C%AC%E7%B3%BB%E5%88%97%E6%96%87%E7%AB%A0%E7%9A%84%E7%9B%AE%E6%A0%87"><span class="nav-text">7. 本系列文章的目标</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8B%E7%AF%87%E9%A2%84%E5%91%8A"><span class="nav-text">下篇预告</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E9%97%AE%E9%A2%98%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%BC%80%E5%8F%91%E8%80%85%E5%AE%B3%E6%80%95%E7%AC%9B%E5%8D%A1%E5%B0%94%E9%80%9F%E5%BA%A6%E6%8E%A7%E5%88%B6%EF%BC%9F"><span class="nav-text">1. 问题：为什么机器人开发者害怕笛卡尔速度控制？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E6%9C%AC%E8%B4%A8%EF%BC%9AJacobian%E6%98%A0%E5%B0%84%E4%B8%BA%E4%BB%80%E4%B9%88%E5%8D%B1%E9%99%A9%EF%BC%9F"><span class="nav-text">2. 本质：Jacobian映射为什么危险？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E5%A5%87%E5%BC%82%E7%82%B9%EF%BC%9A%E6%9F%90%E4%BA%9B%E6%96%B9%E5%90%91%E6%A0%B9%E6%9C%AC%E6%97%A0%E6%B3%95%E5%88%B0%E8%BE%BE"><span class="nav-text">2.1 奇异点：某些方向根本无法到达</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E6%94%BE%E5%A4%A7%E6%95%88%E5%BA%94%EF%BC%9A%E5%B0%8F%E8%BE%93%E5%85%A5%EF%BC%8C%E5%A4%A7%E8%BE%93%E5%87%BA"><span class="nav-text">2.2 放大效应：小输入，大输出</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-%E5%A4%9A%E8%A7%A3%E4%B8%8E%E6%96%B9%E5%90%91%E4%B8%8D%E4%B8%80%E8%87%B4"><span class="nav-text">2.3 多解与方向不一致</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%AF%B9%E6%AF%94%EF%BC%9A%E5%85%B3%E8%8A%82%E9%80%9F%E5%BA%A6-vs-%E7%AC%9B%E5%8D%A1%E5%B0%94%E9%80%9F%E5%BA%A6%E7%9A%84%E5%AE%89%E5%85%A8%E8%BE%B9%E7%95%8C"><span class="nav-text">3. 对比：关节速度 vs 笛卡尔速度的安全边界</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E5%B7%A5%E7%A8%8B%E7%8E%B0%E5%AE%9E%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E5%8D%95%E4%B8%80%E9%98%B2%E6%8A%A4%E4%B8%8D%E5%A4%9F"><span class="nav-text">4. 工程现实：为什么单一防护不够</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E5%A4%9A%E7%BB%B4%E6%A3%80%E9%AA%8C%E7%BD%91%E7%9A%84%E8%AE%BE%E8%AE%A1%E5%93%B2%E5%AD%A6"><span class="nav-text">5. 多维检验网的设计哲学</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-%E5%9D%90%E6%A0%87%E7%B3%BB%E7%BB%9F%E4%B8%80%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88reference-frame%E5%BF%85%E9%A1%BB%E9%94%81%E5%AE%9A"><span class="nav-text">6. 坐标系统一：为什么reference_frame必须锁定</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-%E6%9C%AC%E7%B3%BB%E5%88%97%E6%96%87%E7%AB%A0%E7%9A%84%E7%9B%AE%E6%A0%87"><span class="nav-text">7. 本系列文章的目标</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8B%E7%AF%87%E9%A2%84%E5%91%8A"><span class="nav-text">下篇预告</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -212,7 +212,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">6</span>
+          <span class="site-state-item-count">7</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -223,7 +223,7 @@
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-count">14</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -295,9 +295,15 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
-      
 
-      <time title="创建时间：2025-11-20 15:00:00 / 修改时间：18:11:36" itemprop="dateCreated datePublished" datetime="2025-11-20T15:00:00+08:00">2025-11-20</time>
+      <time title="创建时间：2025-11-20 15:00:00" itemprop="dateCreated datePublished" datetime="2025-11-20T15:00:00+08:00">2025-11-20</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-11-21 14:27:57" itemprop="dateModified" datetime="2025-11-21T14:27:57+08:00">2025-11-21</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -315,7 +321,7 @@
         <i class="far fa-file-word"></i>
       </span>
       <span class="post-meta-item-text">本文字数：</span>
-      <span>5.4k</span>
+      <span>5.3k</span>
     </span>
     <span class="post-meta-item" title="阅读时长">
       <span class="post-meta-item-icon">
@@ -334,7 +340,7 @@
     
     
     <div class="post-body" itemprop="articleBody"><blockquote>
-<p><strong>本系列导读</strong><br>笛卡尔速度控制在机器人实验室很常见，但在工业应用中臭名昭著 — “不稳定、难调试、容易伤人“。本篇从工程角度分析原因。</p>
+<p><strong>本系列导读</strong><br>笛卡尔速度控制在机器人实验室很常见，但在工业应用中臭名昭著 — “不稳定、难调试、容易伤人”。本篇从工程角度分析原因。</p>
 </blockquote>
 <p><strong>本文适合</strong>：想要理解笛卡尔控制器设计哲学的机器人开发者、控制系统架构师</p>
 <p><strong>核心观点</strong>：</p>
@@ -345,18 +351,7 @@
 <li>多维检验网比单一防护链更符合工程现实</li>
 </ul>
 <hr>
-<h2 id="本篇内容"><a href="#本篇内容" class="headerlink" title="本篇内容"></a>本篇内容</h2><ol>
-<li><strong><a href="#1-%E9%97%AE%E9%A2%98%E4%B8%BA%E4%BB%80%E4%B9%88%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%BC%80%E5%8F%91%E8%80%85%E5%AE%B3%E6%80%95%E7%AC%9B%E5%8D%A1%E5%B0%94%E9%80%9F%E5%BA%A6%E6%8E%A7%E5%88%B6">问题：为什么机器人开发者害怕笛卡尔速度控制？</a></strong></li>
-<li><strong><a href="#2-%E6%9C%AC%E8%B4%A8jacobian%E6%98%A0%E5%B0%84%E4%B8%BA%E4%BB%80%E4%B9%88%E5%8D%B1%E9%99%A9">本质：Jacobian映射为什么危险？</a></strong></li>
-<li><strong><a href="#3-%E5%AF%B9%E6%AF%94%E5%85%B3%E8%8A%82%E9%80%9F%E5%BA%A6-vs-%E7%AC%9B%E5%8D%A1%E5%B0%94%E9%80%9F%E5%BA%A6%E7%9A%84%E5%AE%89%E5%85%A8%E8%BE%B9%E7%95%8C">对比：关节速度 vs 笛卡尔速度的安全边界</a></strong></li>
-<li><strong><a href="#4-%E5%B7%A5%E7%A8%8B%E7%8E%B0%E5%AE%9E%E4%B8%BA%E4%BB%80%E4%B9%88%E5%8D%95%E4%B8%80%E9%98%B2%E6%8A%A4%E4%B8%8D%E5%A4%9F">工程现实：为什么单一防护不够</a></strong></li>
-<li><strong><a href="#5-%E5%A4%9A%E7%BB%B4%E6%A3%80%E9%AA%8C%E7%BD%91%E7%9A%84%E8%AE%BE%E8%AE%A1%E5%93%B2%E5%AD%A6">多维检验网的设计哲学</a></strong></li>
-<li><strong><a href="#6-%E5%9D%90%E6%A0%87%E7%B3%BB%E7%BB%9F%E4%B8%80%E4%B8%BA%E4%BB%80%E4%B9%88reference_frame%E5%BF%85%E9%A1%BB%E9%94%81%E5%AE%9A">坐标系统一：为什么reference_frame必须锁定</a></strong></li>
-<li><strong><a href="#7-%E6%9C%AC%E7%B3%BB%E5%88%97%E6%96%87%E7%AB%A0%E7%9A%84%E7%9B%AE%E6%A0%87">本系列文章的目标</a></strong></li>
-</ol>
-<hr>
-<p><a id="1-问题为什么机器人开发者害怕笛卡尔速度控制"></a></p>
-<h2 id="1-问题：为什么机器人开发者害怕笛卡尔速度控制？"><a href="#1-问题：为什么机器人开发者害怕笛卡尔速度控制？" class="headerlink" title="1. 问题：为什么机器人开发者害怕笛卡尔速度控制？"></a>1. 问题：为什么机器人开发者害怕笛卡尔速度控制？</h2><p>如果你问一个工业机器人开发者：“你最害怕什么控制方式？”，常见回答是：</p>
+<h2 id="1-问题：为什么机器人开发者害怕笛卡尔速度控制？"><a href="#1-问题：为什么机器人开发者害怕笛卡尔速度控制？" class="headerlink" title="1. 问题：为什么机器人开发者害怕笛卡尔速度控制？"></a>1. 问题：为什么机器人开发者害怕笛卡尔速度控制？</h2><p>如果你问一个工业机器人开发者：”你最害怕什么控制方式？”，常见回答是：</p>
 <blockquote>
 <p>“笛卡尔速度。接近奇异点就完蛋了。Twist有时候会把机械臂甩出去。”</p>
 </blockquote>
@@ -365,125 +360,82 @@
 <p>关节速度控制：用户说 <code>q̇ = [10, 20, 30] deg/s</code>，电机转速就是 <code>[10, 20, 30]</code>。直接、可预测、可限制。</p>
 <p>笛卡尔速度控制：用户说 <code>v = [0.1, 0, 0] m/s</code>（沿X轴移动），经过Jacobian逆解后可能变成 <code>q̇ = [450, -123, 900, 50, 12, 8] deg/s</code>。</p>
 <p><strong>同一条命令，解决方案完全不同。</strong></p>
-<p>更糟的是：当机器人靠近奇异点时，这个“解决方案”会变得极其不稳定。微小的笛卡尔速度可能要求荒唐的关节速度。</p>
+<p>更糟的是：当机器人靠近奇异点时，这个”解决方案”会变得极其不稳定。微小的笛卡尔速度可能要求荒唐的关节速度。</p>
 <p>这就是设计CartesianVelocityController的真正原因：<strong>你需要一个多维防护体系，而不是一个简单的逆解器</strong>。</p>
 <hr>
-<p><a id="2-本质jacobian映射为什么危险"></a></p>
 <h2 id="2-本质：Jacobian映射为什么危险？"><a href="#2-本质：Jacobian映射为什么危险？" class="headerlink" title="2. 本质：Jacobian映射为什么危险？"></a>2. 本质：Jacobian映射为什么危险？</h2><p>Jacobian是从关节空间到笛卡尔空间的线性映射：</p>
-<p>$$v_{ee} &#x3D; J(q) \cdot \dot{q}$$</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">v_ee = J(q) · q̇</span><br></pre></td></tr></table></figure>
+
 <p>反过来：</p>
-<p>$$\dot{q} &#x3D; J(q)^{-1} \cdot v_{ee}$$</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">q̇ = J(q)⁻¹ · v_ee</span><br></pre></td></tr></table></figure>
+
 <p>这看起来无害，但有三个致命弱点。</p>
-<h3 id="2-1-奇异点：某些方向根本无法到达"><a href="#2-1-奇异点：某些方向根本无法到达" class="headerlink" title="2.1 奇异点：某些方向根本无法到达"></a>2.1 奇异点：某些方向根本无法到达</h3><p>想象一个6轴机械臂的手腕关节全部朝向同一个方向，导致末端工具完全“锁死”了。</p>
+<h3 id="2-1-奇异点：某些方向根本无法到达"><a href="#2-1-奇异点：某些方向根本无法到达" class="headerlink" title="2.1 奇异点：某些方向根本无法到达"></a>2.1 奇异点：某些方向根本无法到达</h3><p>想象一个6轴机械臂的手腕关节全部朝向同一个方向，导致末端工具完全”锁死”了。</p>
 <p>在这个姿态下，你无论怎么转这几个关节，都无法让末端沿着某个特定方向移动。</p>
 <p>这就叫 <strong>奇异点（Singular Point）</strong>。</p>
 <p><strong>为什么会发生？</strong></p>
-<p>机械臂的6个关节通过Jacobian矩阵映射到末端的6个自由度（3个位置 + 3个旋转）。但当某些关节的方向重合或相互抵消时，某些末端方向就“失效”了。</p>
+<p>机械臂的6个关节通过Jacobian矩阵映射到末端的6个自由度（3个位置 + 3个旋转）。但当某些关节的方向重合或相互抵消时，某些末端方向就”失效”了。</p>
 <p><strong>实际的灾难场景</strong>：</p>
-<blockquote>
-<p><strong>场景</strong>：6轴机械臂，现在腕关节处于接近“死锁”的位置</p>
-<p><strong>用户命令</strong>：我要末端沿Z轴向上移动0.1 m&#x2F;s</p>
-<p><strong>控制器心想</strong>：</p>
-<ul>
-<li>“我算一下，这需要关节5转多少…”</li>
-<li>“算不出来！因为无论关节5怎么转，都实现不了这个方向”</li>
-<li>“那我只能让它转个超级大的角度，希望能近似实现”</li>
-<li>→ 结果：关节5突然要求转900°&#x2F;秒</li>
-</ul>
-</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">场景：6轴机械臂，现在腕关节处于接近&quot;死锁&quot;的位置</span><br><span class="line"></span><br><span class="line">用户命令：我要末端沿Z轴向上移动0.1 m/s</span><br><span class="line"></span><br><span class="line">控制器心想：</span><br><span class="line">  &quot;我算一下，这需要关节5转多少...&quot;</span><br><span class="line">  &quot;算不出来！因为无论关节5怎么转，都实现不了这个方向&quot;</span><br><span class="line">  &quot;那我只能让它转个超级大的角度，希望能近似实现&quot;</span><br><span class="line">  → 结果：关节5突然要求转900°/秒</span><br></pre></td></tr></table></figure>
+
 <p><strong>为什么这很危险？</strong></p>
 <ol>
 <li><strong>关节会过载</strong> - 电机被要求做物理上不可能的事，导致过载或损坏</li>
-<li><strong>震荡不稳定</strong> - 即便你强制限制了关节速度（比如最多100°&#x2F;s），控制器内部仍在生成“900°&#x2F;s的指令”，然后被clamp掉。这会导致不断的“尝试→失败→重新尝试”的震荡</li>
-<li><strong>用户无法控制</strong> - 用户只是想往上移0.1m&#x2F;s，结果机械臂整个变成了“不听话的疯子”</li>
+<li><strong>震荡不稳定</strong> - 即便你强制限制了关节速度（比如最多100°&#x2F;s），控制器内部仍在生成”900°&#x2F;s的指令”，然后被clamp掉。这会导致不断的”尝试→失败→重新尝试”的震荡</li>
+<li><strong>用户无法控制</strong> - 用户只是想往上移0.1m&#x2F;s，结果机械臂整个变成了”不听话的疯子”</li>
 </ol>
-<p>这就是为什么单纯地“检查奇异点”远远不够。一个更实用的策略是：<strong>不完全拒绝，而是自动缩放速度</strong>。</p>
+<p>这就是为什么单纯地”检查奇异点”远远不够。一个更实用的策略是：<strong>不完全拒绝，而是自动缩放速度</strong>。</p>
 <p>具体流程：</p>
 <ol>
 <li>如果用户要求0.1 m&#x2F;s，但奇异点会导致关节速度爆炸</li>
 <li>控制器先检查这个速度是否可行，不可行就自动降速</li>
 <li>尝试0.09 m&#x2F;s、0.081 m&#x2F;s、0.073 m&#x2F;s…逐步缩小</li>
-<li>直到找到一个“足够慢”的速度，能让机械臂安全地穿过奇异点</li>
-<li>用户能感受到“变慢了”，但不会被硬生生卡住</li>
+<li>直到找到一个”足够慢”的速度，能让机械臂安全地穿过奇异点</li>
+<li>用户能感受到”变慢了”，但不会被硬生生卡住</li>
 </ol>
-<p>这样设计的好处是：在保证安全的前提下，最大化了可用性。用户可以以“很慢的速度”通过危险区域，而不是被系统拒绝。</p>
+<p>这样设计的好处是：在保证安全的前提下，最大化了可用性。用户可以以”很慢的速度”通过危险区域，而不是被系统拒绝。</p>
 <h3 id="2-2-放大效应：小输入，大输出"><a href="#2-2-放大效应：小输入，大输出" class="headerlink" title="2.2 放大效应：小输入，大输出"></a>2.2 放大效应：小输入，大输出</h3><p>想象一个比喻：你有一个放大倍数不均匀的放大镜。</p>
 <p>在镜子的中心区域，放大倍数是2倍 — 1cm的东西看起来像2cm。</p>
 <p>但在镜子的边缘，放大倍数是1000倍 — 0.001cm的东西看起来像1cm。</p>
-<p>Jacobian矩阵就像这个放大镜。它把关节速度“放大”成末端速度。但<strong>放大倍数在不同方向是不同的</strong>。</p>
+<p>Jacobian矩阵就像这个放大镜。它把关节速度”放大”成末端速度。但<strong>放大倍数在不同方向是不同的</strong>。</p>
 <p><strong>为什么会这样？</strong></p>
 <p>想象一个简单的例子：机械臂的某个姿态下，如果你让关节1转1°，末端会沿X轴移动1cm；但如果你让关节2转1°，末端只会沿Y轴移动0.1cm。</p>
-<p>这就是“方向不同，放大倍数就不同”的本质。</p>
+<p>这就是”方向不同，放大倍数就不同”的本质。</p>
 <p>更极端的情况：某些姿态下，如果你想让末端往某个特定方向移动，<strong>需要同时让多个关节以相互抵消的方式转动</strong>。为了实现一点点的末端移动，关节们就得转很大的角度。就像你用两个力往相反方向拉一样，最后只有很小的合力。</p>
-<p>当机器人接近奇异点时，某些方向的放大倍数会变得极其巨大（或者说，反过来说，需要极大的关节角度才能实现一点点末端运动）。这种“不均匀性”用数学上叫做 <strong>条件数</strong> κ(J) &#x3D; σ_max &#x2F; σ_min，其中 σ_max 和 σ_min 是Jacobian矩阵的最大和最小奇异值，这里奇异值表示了放大倍数。</p>
+<p>当机器人接近奇异点时，某些方向的放大倍数会变得极其巨大（或者说，反过来说，需要极大的关节角度才能实现一点点末端运动）。这种”不均匀性”用数学上叫做 <strong>条件数</strong> κ(J) &#x3D; σ_max &#x2F; σ_min，其中 σ_max 和 σ_min 是Jacobian矩阵的最大和最小奇异值，这里奇异值表示了放大倍数。</p>
 <p><strong>具体例子</strong>：</p>
-<blockquote>
-<p><strong>某个正常姿态</strong>：</p>
-<ul>
-<li>σ_max &#x3D; 10   （这个方向上，关节1°转动 → 末端10mm移动）</li>
-<li>σ_min &#x3D; 8    （那个方向上，关节1°转动 → 末端8mm移动）</li>
-<li>κ &#x3D; 10&#x2F;8 &#x3D; 1.25   非常平衡</li>
-</ul>
-<p><strong>接近奇异点的姿态</strong>：</p>
-<ul>
-<li>σ_max &#x3D; 10</li>
-<li>σ_min &#x3D; 0.01   （这个方向需要1000倍的关节转动才能实现1mm末端移动）</li>
-<li>κ &#x3D; 10&#x2F;0.01 &#x3D; 1000   极度不均衡</li>
-</ul>
-</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">某个正常姿态：</span><br><span class="line">  σ_max = 10   （这个方向上，关节1°转动 → 末端10mm移动）</span><br><span class="line">  σ_min = 8    （那个方向上，关节1°转动 → 末端8mm移动）</span><br><span class="line">  κ = 10/8 = 1.25   非常平衡</span><br><span class="line"></span><br><span class="line">接近奇异点的姿态：</span><br><span class="line">  σ_max = 10</span><br><span class="line">  σ_min = 0.01   （这个方向需要1000倍的关节转动才能实现1mm末端移动）</span><br><span class="line">  κ = 10/0.01 = 1000   极度不均衡</span><br></pre></td></tr></table></figure>
+
 <p><strong>简单的理解</strong>：</p>
 <ul>
 <li>条件数小（比如κ&#x3D;10）：各个方向的放大倍数都差不多（σ_max和σ_min接近），系统稳定</li>
 <li>条件数大（比如κ&#x3D;1000）：某些方向放大倍数极大，某些方向放大倍数极小，不均衡</li>
-<li>条件数极大（比如κ&#x3D;1000000）：接近奇异点了，σ_min趋向0，意味着某个方向完全“失效”了，系统对输入敏感到荒唐的程度</li>
+<li>条件数极大（比如κ&#x3D;1000000）：接近奇异点了，σ_min趋向0，意味着某个方向完全”失效”了，系统对输入敏感到荒唐的程度</li>
 </ul>
 <p><strong>实际场景</strong>：</p>
-<blockquote>
-<p><strong>用户</strong>：我要0.05 m&#x2F;s的线速度，角速度为0</p>
-<p><strong>控制器计算后</strong>：关节速度峰值达到500 deg&#x2F;s</p>
-<p><strong>用户再调一下参数</strong>，改成0.051 m&#x2F;s（只增加了0.001）</p>
-<p><strong>控制器计算后</strong>：关节速度峰值达到1500 deg&#x2F;s</p>
-<p><strong>为什么？</strong> 因为这0.001 m&#x2F;s的增量正好落在了“高放大倍数”的方向上。</p>
-</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">用户：我要0.05 m/s的线速度，角速度为0</span><br><span class="line">控制器计算后：关节速度峰值达到500 deg/s</span><br><span class="line"></span><br><span class="line">用户再调一下参数，改成0.051 m/s（只增加了0.001）</span><br><span class="line">控制器计算后：关节速度峰值达到1500 deg/s</span><br><span class="line"></span><br><span class="line">为什么？因为这0.001 m/s的增量正好落在了&quot;高放大倍数&quot;的方向上。</span><br></pre></td></tr></table></figure>
+
 <p>这不是BUG，这是Jacobian的性质。<strong>接近奇异点时，系统变得超级敏感</strong> — 毫厘之差导致天壤之别。</p>
-<p>因此，你需要在QP求解前就检查这个条件数。如果条件数太大，说明机械臂处于“危险位置”，不应该接受笛卡尔速度命令。</p>
+<p>因此，你需要在QP求解前就检查这个条件数。如果条件数太大，说明机械臂处于”危险位置”，不应该接受笛卡尔速度命令。</p>
 <h3 id="2-3-多解与方向不一致"><a href="#2-3-多解与方向不一致" class="headerlink" title="2.3 多解与方向不一致"></a>2.3 多解与方向不一致</h3><p>想象这样一个场景：你要求末端沿X轴移动，但由于关节限制，QP求解器找不到完全满足这个要求的解。</p>
-<p>它只能找到一个“折中方案”：</p>
+<p>它只能找到一个”折中方案”：</p>
 <ul>
 <li>末端大部分往X方向移动</li>
 <li>但同时也往Y方向移动一点点</li>
 <li>以及往Z方向移动一点点</li>
 </ul>
-<p><strong>这就叫“方向不一致”</strong> — QP给出的解在末端的实际运动方向与你的期望不符。</p>
+<p><strong>这就叫”方向不一致”</strong> — QP给出的解在末端的实际运动方向与你的期望不符。</p>
 <p><strong>为什么会这样？</strong></p>
-<p>因为QP是在约束下寻找“最优解”，而不是“你想要的解”。</p>
-<blockquote>
-<p><strong>用户要求</strong>：末端沿X轴移动，v &#x3D; [1, 0, 0]</p>
-<p><strong>QP的约束</strong>（可能来自关节限制、奇异点、工作空间边界）：</p>
-<ul>
-<li>只能让关节1和关节2同时转动</li>
-<li>关节1转动会产生X和Y方向的末端速度</li>
-<li>关节2转动会产生X和Z方向的末端速度</li>
-</ul>
-<p><strong>QP被迫找到的“妥协方案”</strong>：</p>
-<ul>
-<li>关节1转30°&#x2F;s → 末端 [0.8, 0.3, 0] m&#x2F;s</li>
-<li>关节2转20°&#x2F;s → 末端 [0.2, 0, 0.5] m&#x2F;s</li>
-<li>合成：末端实际速度 [1.0, 0.3, 0.5] m&#x2F;s</li>
-</ul>
-<p><strong>结果</strong>：末端不是往X轴走，而是往“斜45°“的方向走了。</p>
-</blockquote>
+<p>因为QP是在约束下寻找”最优解”，而不是”你想要的解”。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">用户要求：末端沿X轴移动，v = [1, 0, 0]</span><br><span class="line"></span><br><span class="line">QP的约束（可能来自关节限制、奇异点、工作空间边界）：</span><br><span class="line">  - 只能让关节1和关节2同时转动</span><br><span class="line">  - 关节1转动会产生X和Y方向的末端速度</span><br><span class="line">  - 关节2转动会产生X和Z方向的末端速度</span><br><span class="line"></span><br><span class="line">QP被迫找到的&quot;妥协方案&quot;：</span><br><span class="line">  - 关节1转30°/s → 末端 [0.8, 0.3, 0] m/s</span><br><span class="line">  - 关节2转20°/s → 末端 [0.2, 0, 0.5] m/s</span><br><span class="line">  - 合成：末端实际速度 [1.0, 0.3, 0.5] m/s</span><br><span class="line"></span><br><span class="line">结果：末端不是往X轴走，而是往&quot;斜45°&quot;的方向走了。</span><br></pre></td></tr></table></figure>
+
 <p><strong>为什么这很危险？</strong></p>
 <p>用户看到机械臂的动作，会很困惑：</p>
-<blockquote>
-<p><strong>用户</strong>：“为什么我要往右，机械臂却往右上方走？”</p>
-<p><strong>系统</strong>：“约束条件允许的最优解就这样。”</p>
-<p><strong>用户</strong>：“这不是我要的！”</p>
-</blockquote>
-<p>而且，如果这个“错的方向“正好朝向障碍物，机械臂可能会碰撞。</p>
-<p><strong>因此需要后置验证</strong>：在QP求解后，检查末端速度的实际方向是否与期望方向一致（夹角要小于5°）。如果方向偏离太大，说明QP的“妥协方案”已经偏离了用户意图，此时应该停止运动，而不是执行这个“错的方向”。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">用户：&quot;为什么我要往右，机械臂却往右上方走？&quot;</span><br><span class="line">系统：&quot;约束条件允许的最优解就这样。&quot;</span><br><span class="line">用户：&quot;这不是我要的！&quot;</span><br></pre></td></tr></table></figure>
+
+<p>而且，如果这个”错的方向”正好朝向障碍物，机械臂可能会碰撞。</p>
+<p><strong>因此需要后置验证</strong>：在QP求解后，检查末端速度的实际方向是否与期望方向一致（夹角要小于5°）。如果方向偏离太大，说明QP的”妥协方案”已经偏离了用户意图，此时应该停止运动，而不是执行这个”错的方向”。</p>
 <hr>
-<p><a id="3-对比关节速度-vs-笛卡尔速度的安全边界"></a></p>
 <h2 id="3-对比：关节速度-vs-笛卡尔速度的安全边界"><a href="#3-对比：关节速度-vs-笛卡尔速度的安全边界" class="headerlink" title="3. 对比：关节速度 vs 笛卡尔速度的安全边界"></a>3. 对比：关节速度 vs 笛卡尔速度的安全边界</h2><p>这是工程实践中最重要的区别：</p>
 <table>
 <thead>
@@ -524,25 +476,23 @@
 <td>需要QP求解 + fallback</td>
 </tr>
 </tbody></table>
-<p><strong>结论</strong>：关节速度控制可以“裸用”，笛卡尔速度控制不能。</p>
+<p><strong>结论</strong>：关节速度控制可以”裸用”，笛卡尔速度控制不能。</p>
 <hr>
-<p><a id ="4-工程现实：为什么单一防护不够"></a></p>
 <h2 id="4-工程现实：为什么单一防护不够"><a href="#4-工程现实：为什么单一防护不够" class="headerlink" title="4. 工程现实：为什么单一防护不够"></a>4. 工程现实：为什么单一防护不够</h2><p>很多教材或开源代码使用简单的防护：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 防护1：检查奇异点</span></span><br><span class="line"><span class="keyword">if</span> (condition_number &gt; <span class="number">1e6</span>) &#123;</span><br><span class="line">    <span class="built_in">stop</span>();</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 防护2：求逆</span></span><br><span class="line">q_dot = <span class="built_in">pseudoinverse</span>(J) * v_desired;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 防护3：限制关节速度</span></span><br><span class="line"><span class="built_in">clamp</span>(q_dot, joint_limits);</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> q_dot;</span><br></pre></td></tr></table></figure>
 
 <p>这听起来理性，但在实际应用中失败率很高，因为：</p>
 <ol>
-<li><strong>奇异点检查只防止最坏情况，不防止“接近奇异点”的不稳定</strong></li>
+<li><strong>奇异点检查只防止最坏情况，不防止”接近奇异点”的不稳定</strong></li>
 <li><strong>伪逆本身就容易产生放大解</strong></li>
 <li><strong>clamp关节速度无法防止方向错误</strong></li>
 <li><strong>无法处理用户输入的twist过大</strong></li>
 </ol>
 <p>实际需要的是：<strong>多个维度的、互相补充的检验</strong>。</p>
 <hr>
-<p><a id="5-多维检验网的设计哲学"></a></p>
 <h2 id="5-多维检验网的设计哲学"><a href="#5-多维检验网的设计哲学" class="headerlink" title="5. 多维检验网的设计哲学"></a>5. 多维检验网的设计哲学</h2><p>一个实用的CartesianVelocityController应该采用这样的设计：</p>
-<p><img data-src="/../images/image.png" alt="笛卡尔速度控制多维检验网设计"></p>
-<p><strong>为什么是“多维”而不是“串联”？</strong></p>
+<p><img data-src="/src/arm_controller/docs/diagrams/cartesian_velocity_safety_flow.png" alt="笛卡尔速度控制多维检验网设计"></p>
+<p><strong>为什么是”多维”而不是”串联”？</strong></p>
 <p>因为这些检验检测的是<strong>不同维度的问题</strong>：</p>
 <ul>
 <li>几何可行性：方向维度</li>
@@ -552,14 +502,10 @@
 </ul>
 <p>某一个失败≠整体失败。更重要的是，这些失败可以通过<strong>Fallback几何缩放</strong>（0.9倍scale）来恢复，而不是直接停止。</p>
 <hr>
-<p><a id="6-坐标系统一为什么reference_frame必须锁定"></a></p>
 <h2 id="6-坐标系统一：为什么reference-frame必须锁定"><a href="#6-坐标系统一：为什么reference-frame必须锁定" class="headerlink" title="6. 坐标系统一：为什么reference_frame必须锁定"></a>6. 坐标系统一：为什么reference_frame必须锁定</h2><p>这是实践中最容易忽视的问题。</p>
 <p>用户可能给出来自不同坐标系的twist：</p>
-<blockquote>
-<p>命令1：twist相对于world（全局固定）</p>
-<p>命令2：twist相对于base_link（机器人基座）</p>
-<p>命令3：twist相对于tool frame（末端工具）</p>
-</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">命令1：twist相对于world（全局固定）</span><br><span class="line">命令2：twist相对于base_link（机器人基座）</span><br><span class="line">命令3：twist相对于tool frame（末端工具）</span><br></pre></td></tr></table></figure>
+
 <p>如果控制器不强制统一：</p>
 <ul>
 <li>坐标系会随机械臂姿态变化</li>
@@ -579,15 +525,14 @@
 <li><p><strong>避免了奇异点附近坐标系退化的问题</strong> - 这是关键：</p>
 <ul>
 <li>当机械臂接近奇异点时，末端工具的姿态Jacobian会变得极其不稳定</li>
-<li>如果你还在“跟踪”末端工具的坐标系（tool frame），这个坐标系本身就会在奇异点附近“翻转”或“旋转不清”</li>
+<li>如果你还在”跟踪”末端工具的坐标系（tool frame），这个坐标系本身就会在奇异点附近”翻转”或”旋转不清”</li>
 <li>导致坐标系的Jacobian也会爆炸，叠加上末端速度的Jacobian，问题加倍</li>
-<li>而锁定为世界坐标系（world frame）就避免了这个二阶问题 — 世界坐标系永远是固定的，不会因为机械臂姿态变化而“退化”</li>
+<li>而锁定为世界坐标系（world frame）就避免了这个二阶问题 — 世界坐标系永远是固定的，不会因为机械臂姿态变化而”退化”</li>
 </ul>
 </li>
 </ol>
 <hr>
-<p><a id="7-本系列文章的目标"></a></p>
-<h2 id="7-本系列文章的目标"><a href="#7-本系列文章的目标" class="headerlink" title="7. 本系列文章的目标"></a>7. 本系列文章的目标</h2><p>现在你已经理解了“为什么需要多维检验”，接下来两篇会告诉你：</p>
+<h2 id="7-本系列文章的目标"><a href="#7-本系列文章的目标" class="headerlink" title="7. 本系列文章的目标"></a>7. 本系列文章的目标</h2><p>现在你已经理解了”为什么需要多维检验”，接下来两篇会告诉你：</p>
 <p><strong>第二篇（中篇）</strong>：四大检验机制的工程实现</p>
 <ul>
 <li>几何可行性检验怎么快速判定</li>
@@ -607,27 +552,20 @@
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>笛卡尔速度控制之所以危险，不是因为理论复杂，而是因为<strong>工程现实很复杂</strong>。</p>
 <p><strong>没有单一的解决方案能解决所有问题。</strong></p>
 <p>你可能会想：</p>
-<blockquote>
-<ul>
-<li>“只要检查奇异点，不就安全了？”</li>
-<li>“只要做QP求解，不就能算出正确的关节速度？”</li>
-<li>“只要限制关节速度，不就能保证不爆炸？”</li>
-</ul>
-</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&quot;只要检查奇异点，不就安全了？&quot;</span><br><span class="line">&quot;只要做QP求解，不就能算出正确的关节速度？&quot;</span><br><span class="line">&quot;只要限制关节速度，不就能保证不爆炸？&quot;</span><br></pre></td></tr></table></figure>
+
 <p>但现实是：</p>
-<blockquote>
 <ul>
-<li>奇异点检查只防止最坏情况，接近奇异点的“灰色地带”仍然危险</li>
+<li>奇异点检查只防止最坏情况，接近奇异点的”灰色地带”仍然危险</li>
 <li>QP求解会产生错误方向的解</li>
 <li>关节速度限制无法防止方向错误导致的碰撞</li>
 </ul>
-</blockquote>
-<p>因此，笛卡尔速度控制需要的不是某一个“银弹”，而是<strong>多维、容错、自适应的防护网络</strong> — 几何可行性检查、QP求解、方向验证、边界检查、Fallback缩放，各个机制相互补充。</p>
+<p>因此，笛卡尔速度控制需要的不是某一个”银弹”，而是<strong>多维、容错、自适应的防护网络</strong> — 几何可行性检查、QP求解、方向验证、边界检查、Fallback缩放，各个机制相互补充。</p>
 <p>这就是CartesianVelocityController存在的理由。</p>
 <hr>
 <h2 id="下篇预告"><a href="#下篇预告" class="headerlink" title="下篇预告"></a>下篇预告</h2><p>本篇讲解了笛卡尔速度控制的本质危险 — 奇异点、放大效应、方向不一致、坐标系退化。这些都指向一个核心设计原则：<strong>多维、容错、自适应的防护网络</strong>。</p>
 <p>如果你想了解<strong>这些防护机制如何在代码中实现</strong>、<strong>各个检验函数的工程细节</strong>以及<strong>Fallback缩放为什么比伪逆更可靠</strong>，请继续阅读：</p>
-<p>[《笛卡尔控制的安全设计（中篇）：四大检验机制 + 容错机制的工程实现》](&#x2F;2025&#x2F;11&#x2F;20&#x2F;笛卡尔控制的安全设计（中篇）：四大检验机制 + 容错机制的工程实现&#x2F;)</p>
+<p><a href="/2025/11/21/%E7%AC%9B%E5%8D%A1%E5%B0%94%E6%8E%A7%E5%88%B6%E7%9A%84%E5%AE%89%E5%85%A8%E8%AE%BE%E8%AE%A1%EF%BC%88%E4%B8%8B%E7%AF%87%EF%BC%89%EF%BC%9A%E5%9B%9B%E5%A4%A7%E6%A3%80%E9%AA%8C%E6%9C%BA%E5%88%B6%20+%20%E5%AE%B9%E9%94%99%E6%9C%BA%E5%88%B6%E7%9A%84%E5%B7%A5%E7%A8%8B%E5%AE%9E%E7%8E%B0.md">《笛卡尔控制的安全设计（下篇）：四大检验机制 + 容错机制的工程实现》</a></p>
 
     </div>
 
@@ -706,6 +644,9 @@
                 </a>
             </div>
             <div class="post-nav-item">
+                <a href="/2025/11/21/%E7%AC%9B%E5%8D%A1%E5%B0%94%E6%8E%A7%E5%88%B6%E7%9A%84%E5%AE%89%E5%85%A8%E8%AE%BE%E8%AE%A1%EF%BC%88%E4%B8%8B%E7%AF%87%EF%BC%89%EF%BC%9A%E5%9B%9B%E5%A4%A7%E6%A3%80%E9%AA%8C%E6%9C%BA%E5%88%B6%20+%20%E5%AE%B9%E9%94%99%E6%9C%BA%E5%88%B6%E7%9A%84%E5%B7%A5%E7%A8%8B%E5%AE%9E%E7%8E%B0/" rel="next" title="笛卡尔控制的安全设计（下篇）：四大检验机制 + 容错机制的工程实现">
+                  笛卡尔控制的安全设计（下篇）：四大检验机制 + 容错机制的工程实现 <i class="fa fa-angle-right"></i>
+                </a>
             </div>
           </div>
     </footer>
